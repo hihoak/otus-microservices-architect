@@ -6,6 +6,8 @@ test-postman:
 
 install-postgres:
 	./build/k8s/infra/postgresql/install.sh
+	echo "sleep 30 sec to wait postgresql"
+	sleep 30
 
 build-app:
 	docker login
@@ -33,9 +35,10 @@ run-migrations:
 delete-migrations:
 	kubectl delete -f ./build/k8s/migrations/job.yaml
 
-install-all:
+install-infra:
 	./build/k8s/infra/install.sh
-	./build/k8s/install.sh
+	echo "wait 30 sec for ingress"
+	sleep 30
 
 install-app:
 	./build/k8s/install.sh
@@ -52,3 +55,7 @@ encrypt-secret:
 
 decrypt-secret:
 	gpg --batch --output build/k8s/migrations/secret.yaml --passphrase mypassword --decrypt build/k8s/migrations/secret.yaml.gpg
+
+install-world: install-infra install-postgres run-migrations install-app
+
+check-hw: decrypt-secret install-world test-postman
