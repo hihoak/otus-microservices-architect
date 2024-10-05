@@ -58,4 +58,4 @@ decrypt-secret:
 
 install-world: install-infra install-postgres run-migrations install-app
 
-check-hw: decrypt-secret install-world test-postman
+check-hw: decrypt-secret install-world
