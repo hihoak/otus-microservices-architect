@@ -1,2 +1,4 @@
 bin
 .idea
+build/k8s/secret.yaml
+build/k8s/migrations/secret.yaml

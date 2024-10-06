@@ -17,6 +17,12 @@ spec:
     spec:
       containers:
         - name: backend
-          image: soundsofanarchy/otus-microservices-architect:v0.0.1-arm
+          imagePullPolicy: Always
+          image: soundsofanarchy/otus-microservices-architect:v1.0.0-arm
           ports:
             - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: backend
+            - secretRef:
+                name: backend
