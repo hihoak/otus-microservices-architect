@@ -12,19 +12,19 @@ install-postgres:
 build-app:
 	docker login
 	GOOS=linux GOARCH=amd64 go build -o bin/service cmd/main.go
-	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v1.0.0 -f build/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.0.0
+	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v1.1.0 -f build/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v1.1.0
 
 	GOOS=linux GOARCH=arm64 go build -o bin/service cmd/main.go
-	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v1.0.0-arm -f build/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.0.0-arm
+	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v1.1.0-arm -f build/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v1.1.0-arm
 
 build-migrations:
 	docker login
-	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v1.0.0-migrations -f build/k8s/migrations/Dockerfile .
-	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v1.0.0-migrations-arm -f build/k8s/migrations/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.0.0-migrations
-	docker push soundsofanarchy/otus-microservices-architect:v1.0.0-migrations-arm
+	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v1.1.0-migrations -f build/k8s/migrations/Dockerfile .
+	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v1.1.0-migrations-arm -f build/k8s/migrations/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v1.1.0-migrations
+	docker push soundsofanarchy/otus-microservices-architect:v1.1.0-migrations-arm
 
 build-all: build-app build-migrations
 
@@ -59,3 +59,9 @@ decrypt-secret:
 install-world: install-infra install-postgres run-migrations install-app
 
 check-hw: decrypt-secret install-world test-postman
+
+load-test-create-user:
+	ab -s 2 -s 2 -t 1200 -T "application/json" -p tests/load/create_user.json http://arch.homework/otusapp/artem/users
+
+load-test-get-user:
+	ab -c 2 -s 2 -t 1200 http://arch.homework/otusapp/artem/users

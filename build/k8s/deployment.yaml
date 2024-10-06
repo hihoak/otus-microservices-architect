@@ -14,13 +14,18 @@ spec:
     metadata:
       labels:
         app: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8001"
     spec:
       containers:
         - name: backend
           imagePullPolicy: Always
-          image: soundsofanarchy/otus-microservices-architect:v1.0.0-arm
+          image: soundsofanarchy/otus-microservices-architect:v1.1.0-arm
           ports:
             - containerPort: 8000
+            - containerPort: 8001
           envFrom:
             - configMapRef:
                 name: backend

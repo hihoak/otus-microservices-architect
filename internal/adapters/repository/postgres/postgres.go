@@ -4,19 +4,24 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type PostgresRepository struct {
-	Conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 func NewPostgresRepository(ctx context.Context, dsn string) (*PostgresRepository, error) {
-	conn, err := pgx.Connect(ctx, dsn)
+	pool, err := pgxpool.Connect(ctx, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("connection to postgres: %w", err)
 	}
 
 	return &PostgresRepository{
-		Conn: conn,
+		pool: pool,
 	}, nil
+}
+
+func (repo *PostgresRepository) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
+	return repo.pool.Query(ctx, sql, args...)
 }
