@@ -7,58 +7,6 @@
 	},
 	"item": [
 		{
-			"name": "create user",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status test and res\", function() {",
-							"    pm.response.to.have.status(200)",
-							"})",
-							"",
-							"pm.test(\"Response time is within an acceptable range\", function () {",
-							"  pm.expect(pm.response.responseTime).to.be.below(100);",
-							"});",
-							"",
-							"",
-							"pm.globals.set(\"user1.username\", \"artem\");",
-							"pm.globals.set(\"user1.password\", \"1111\");"
-						],
-						"type": "text/javascript",
-						"packages": {}
-					}
-				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"username\": \"artem\",\n    \"password\": \"1111\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://arch.homework/auth/artem/sign-up",
-					"protocol": "http",
-					"host": [
-						"arch",
-						"homework"
-					],
-					"path": [
-						"auth",
-						"artem",
-						"sign-up"
-					]
-				}
-			},
-			"response": []
-		},
-		{
 			"name": "list users empty",
 			"event": [
 				{
@@ -102,21 +50,6 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
 				"method": "GET",
 				"header": [],
 				"url": {
@@ -153,21 +86,6 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
 				"method": "GET",
 				"header": [],
 				"url": {
@@ -205,21 +123,6 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
 				"method": "POST",
 				"header": [],
 				"body": {
@@ -265,21 +168,6 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
 				"method": "POST",
 				"header": [],
 				"body": {
@@ -329,21 +217,6 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
 				"method": "GET",
 				"header": [],
 				"url": {
@@ -379,26 +252,11 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
 				"method": "PUT",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"first_name\": \"katya\",\n    \"sur_name\": \"hello\",\n    \"age\": 22,\n    \"owned_by_username\": \"{{user1.username}}\"\n}",
+					"raw": "{\n    \"first_name\": \"katya\",\n    \"sur_name\": \"hello\",\n    \"age\": 22\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -445,21 +303,6 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
 				"method": "GET",
 				"header": [],
 				"url": {
@@ -495,21 +338,6 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
 				"method": "DELETE",
 				"header": [],
 				"body": {
@@ -555,21 +383,6 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
 				"method": "DELETE",
 				"header": [],
 				"url": {
@@ -609,21 +422,6 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
 				"method": "GET",
 				"header": [],
 				"url": {

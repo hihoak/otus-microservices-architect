@@ -13,17 +13,15 @@ import (
 func (s Service) DeleteUserHandler(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("wrong id format it must be int: %s", err.Error())})
-		return
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("wrong id format it must be int: %s", err.Error())})
 	}
-	username, _, _ := c.Request.BasicAuth()
-	err = s.usersService.DeleteUser(context.Background(), uint64(id), username)
+
+	err = s.usersService.DeleteUser(context.Background(), uint64(id))
 	if err != nil {
 		if errors.Is(err, user.ErrNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
 	c.JSON(http.StatusOK, gin.H{})

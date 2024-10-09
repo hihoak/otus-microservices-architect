@@ -7,11 +7,9 @@ import (
 )
 
 func (s Service) ListUsersHandler(c *gin.Context) {
-	username, _, _ := c.Request.BasicAuth()
-	u, err := s.usersService.ListUser(context.Background(), username)
+	u, err := s.usersService.ListUser(context.Background())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"users": u})
