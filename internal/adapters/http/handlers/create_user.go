@@ -17,15 +17,17 @@ type CreateUserBody struct {
 func (s Service) CreateUserHandler(c *gin.Context) {
 	body := CreateUserBody{}
 	if err := c.BindJSON(&body); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-
-	err := s.usersService.CreateUser(context.Background(), body.FirstName, body.Surname, body.Age)
+	username, _, _ := c.Request.BasicAuth()
+	err := s.usersService.CreateUser(context.Background(), body.FirstName, body.Surname, body.Age, username)
 	if err != nil {
 		if errors.Is(err, user.ErrNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{})

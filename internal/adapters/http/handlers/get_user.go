@@ -16,8 +16,8 @@ func (s Service) GetUserHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("wrong id format it must be int: %s", err.Error())})
 		return
 	}
-
-	u, err := s.usersService.GetUser(context.Background(), uint64(id))
+	username, _, _ := c.Request.BasicAuth()
+	u, err := s.usersService.GetUser(context.Background(), uint64(id), username)
 	if err != nil {
 		if errors.Is(err, user.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})

@@ -22,14 +22,14 @@ func NewPostgresUsersRepository(client *postgres.PostgresRepository) *PostgresUs
 func (p *PostgresUsersRepository) GetUser(ctx context.Context, id user.UserID) (*user.User, error) {
 	selectBuilder := sqlbuilder.NewSelectBuilder()
 	sql, args := selectBuilder.Select(
-		"id", "first_name", "sur_name", "age",
+		"id", "first_name", "sur_name", "age", "owned_by_username",
 	).
 		From("users").
 		Where(selectBuilder.Equal("id", id)).
 		BuildWithFlavor(sqlbuilder.PostgreSQL)
 
 	var u user.User
-	rows, err := p.client.Conn.Query(ctx, sql, args...)
+	rows, err := p.client.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf("unexpected err when creating query: %w", err)
 	}
@@ -49,12 +49,12 @@ func (p *PostgresUsersRepository) GetUser(ctx context.Context, id user.UserID) (
 func (p *PostgresUsersRepository) CreateUser(ctx context.Context, u user.User) error {
 	insertBuilder := sqlbuilder.NewInsertBuilder()
 	sql, args := insertBuilder.InsertInto("users").
-		Cols("first_name", "sur_name", "age").
-		Values(u.Firstname, u.Surname, u.Age).
+		Cols("first_name", "sur_name", "age", "owned_by_username").
+		Values(u.Firstname, u.Surname, u.Age, u.OwnedByUsername).
 		SQL(fmt.Sprintf("RETURNING %s", "id")).
 		BuildWithFlavor(sqlbuilder.PostgreSQL)
 
-	rows, err := p.client.Conn.Query(ctx, sql, args...)
+	rows, err := p.client.Query(ctx, sql, args...)
 	if err != nil {
 		return fmt.Errorf("unexpected err when creating query: %w", err)
 	}
@@ -71,11 +71,12 @@ func (p *PostgresUsersRepository) UpdateUser(ctx context.Context, u *user.User) 
 			updateBuilder.Equal("first_name", u.Firstname),
 			updateBuilder.Equal("sur_name", u.Surname),
 			updateBuilder.Equal("age", u.Age),
+			updateBuilder.Equal("owned_by_username", u.OwnedByUsername),
 		).
 		Where(updateBuilder.Equal("id", u.ID)).
 		BuildWithFlavor(sqlbuilder.PostgreSQL)
 
-	rows, err := p.client.Conn.Query(ctx, sql, args...)
+	rows, err := p.client.Query(ctx, sql, args...)
 	if err != nil {
 		return fmt.Errorf("unexpected err when creating query: %w", err)
 	}
@@ -90,7 +91,7 @@ func (p *PostgresUsersRepository) DeleteUser(ctx context.Context, id user.UserID
 		Where(updateBuilder.Equal("id", id)).
 		BuildWithFlavor(sqlbuilder.PostgreSQL)
 
-	rows, err := p.client.Conn.Query(ctx, sql, args...)
+	rows, err := p.client.Query(ctx, sql, args...)
 	if err != nil {
 		return fmt.Errorf("unexpected err when creating query: %w", err)
 	}
@@ -99,14 +100,15 @@ func (p *PostgresUsersRepository) DeleteUser(ctx context.Context, id user.UserID
 	return nil
 }
 
-func (p *PostgresUsersRepository) ListUser(ctx context.Context) ([]user.User, error) {
+func (p *PostgresUsersRepository) ListUser(ctx context.Context, requesterUsername string) ([]user.User, error) {
 	updateBuilder := sqlbuilder.NewSelectBuilder()
-	sql, args := updateBuilder.Select("id", "first_name", "sur_name", "age").
+	sql, args := updateBuilder.Select("id", "first_name", "sur_name", "age", "owned_by_username").
 		From("users").
+		Where(updateBuilder.Or(updateBuilder.Equal("owned_by_username", requesterUsername), updateBuilder.Equal("owned_by_username", ""))).
 		BuildWithFlavor(sqlbuilder.PostgreSQL)
 
 	users := []user.User{}
-	rows, err := p.client.Conn.Query(ctx, sql, args...)
+	rows, err := p.client.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf("unexpected err when creating query: %w", err)
 	}
