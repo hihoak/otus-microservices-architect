@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-migrations
+  namespace: app
+spec:
+  template:
+    spec:
+      containers:
+        - name: backend-migrations
+          imagePullPolicy: Always
+          image: docker.io/soundsofanarchy/otus-microservices-architect:v1.0.0-migrations-arm
+          envFrom:
+            - secretRef:
+                name: backend
+      restartPolicy: Never
+  backoffLimit: 30

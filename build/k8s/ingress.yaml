@@ -12,7 +12,7 @@ spec:
     - host: "arch.homework"
       http:
         paths:
-          - path: /otusapp/(.*)/(.*)
+          - path: /otusapp/(\w*)/(.*)
             pathType: ImplementationSpecific
             backend:
               service:
