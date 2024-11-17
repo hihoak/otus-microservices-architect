@@ -9,7 +9,7 @@ import (
 
 type UserRepository interface {
 	GetUser(ctx context.Context, id user.UserID) (*user.User, error)
-	CreateUser(ctx context.Context, user user.User) error
+	CreateUser(ctx context.Context, user user.User) (*user.User, error)
 	UpdateUser(ctx context.Context, user *user.User) error
 	DeleteUser(ctx context.Context, id user.UserID) error
 	ListUser(ctx context.Context, requesterUsername string) ([]user.User, error)
@@ -35,13 +35,13 @@ func (s *UserService) GetUser(ctx context.Context, id uint64, requesterUsername 
 	return nil, fmt.Errorf("GetUser: %w", user.ErrNotFound)
 }
 
-func (s *UserService) CreateUser(ctx context.Context, firstName, surName string, age uint8, ownByUsername string) error {
+func (s *UserService) CreateUser(ctx context.Context, firstName, surName string, age uint8, ownByUsername string) (*user.User, error) {
 	logger.Log.Info(fmt.Sprintf("[CreateUser] firstName: %v, surName: %v. age: %v, ownByUsername: %v", firstName, surName, age, ownByUsername))
-	err := s.repo.CreateUser(ctx, user.NewUser(firstName, surName, age, ownByUsername))
+	usr, err := s.repo.CreateUser(ctx, user.NewUser(firstName, surName, age, ownByUsername))
 	if err != nil {
-		return fmt.Errorf("CreateUser: %w", err)
+		return nil, fmt.Errorf("CreateUser: %w", err)
 	}
-	return nil
+	return usr, nil
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, id uint64, firstName string, surName string, age uint8, ownedByUsername, requesterUsername string) error {

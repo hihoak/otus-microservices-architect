@@ -5,3 +5,4 @@ kubectx minikube
 
 echo "delete"
 kubectl delete namespace m
+kubectl delete namespace kafka

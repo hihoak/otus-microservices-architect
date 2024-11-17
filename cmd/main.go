@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/http/handlers"
+	"github.com/hihoak/otus-microservices-architect/internal/adapters/kafka"
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/hihoak/otus-microservices-architect/internal/domain/user/repo"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
@@ -23,8 +24,9 @@ func main() {
 	}
 	usersRepo := repo.NewPostgresUsersRepository(postgresClient)
 	userService := service.NewUserService(usersRepo)
+	kafkaClient := kafka.NewKafka()
 
-	app := handlers.NewService(userService)
+	app := handlers.NewService(userService, kafkaClient)
 
 	appRouter := gin.Default()
 	metricsRouter := gin.Default()

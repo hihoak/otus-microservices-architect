@@ -16,3 +16,7 @@ echo "install grafana"
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
 helm upgrade -i grafana grafana/grafana -f build/k8s/infra/grafana/values.yaml
+
+echo "install kafka"
+kubectl create namespace kafka || true
+helm upgrade -n kafka -i kafka oci://registry-1.docker.io/bitnamicharts/kafka -f build/k8s/infra/kafka/values.yaml

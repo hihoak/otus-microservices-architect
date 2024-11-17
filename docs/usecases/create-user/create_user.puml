@@ -1,0 +1,8 @@
+@startuml
+actor Actor as actor
+queue "users-events" as kafka
+
+actor -> "users-service" : POST /users
+"users-service" -> kafka : UserCreated
+kafka -> "billing-service" : UserCreated -> POST /accounts
+@enduml

@@ -21,11 +21,16 @@ func (s Service) CreateUserHandler(c *gin.Context) {
 		return
 	}
 	username, _, _ := c.Request.BasicAuth()
-	err := s.usersService.CreateUser(context.Background(), body.FirstName, body.Surname, body.Age, username)
+	usr, err := s.usersService.CreateUser(context.Background(), body.FirstName, body.Surname, body.Age, username)
 	if err != nil {
 		if errors.Is(err, user.ErrNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err = s.kafkaClient.WriteUserCreatedEvent(context.Background(), usr); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

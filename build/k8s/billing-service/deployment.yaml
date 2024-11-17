@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service
+  namespace: app
+  labels:
+    app: billing-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: billing-service
+  template:
+    metadata:
+      labels:
+        app: billing-service
+    spec:
+      containers:
+        - name: billing-service
+          imagePullPolicy: Always
+          image: soundsofanarchy/otus-microservices-architect:v1.3.0-billing-service-arm
+          ports:
+            - containerPort: 9000
+          envFrom:
+            - secretRef:
+                name: backend
