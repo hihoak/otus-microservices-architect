@@ -3,17 +3,19 @@ package user
 type UserID uint64
 
 type User struct {
-	ID        UserID `db:"id"`
-	Firstname string `db:"first_name"`
-	Surname   string `db:"sur_name"`
-	Age       uint8  `db:"age"`
+	ID              UserID `db:"id"`
+	Firstname       string `db:"first_name"`
+	Surname         string `db:"sur_name"`
+	Age             uint8  `db:"age"`
+	OwnedByUsername string `db:"owned_by_username"`
 }
 
-func NewUser(firstname, surname string, age uint8) User {
+func NewUser(firstname, surname string, age uint8, createdByUsername string) User {
 	return User{
-		Firstname: firstname,
-		Surname:   surname,
-		Age:       age,
+		Firstname:       firstname,
+		Surname:         surname,
+		Age:             age,
+		OwnedByUsername: createdByUsername,
 	}
 }
 
@@ -27,4 +29,8 @@ func (u *User) SetSurname(surname string) {
 
 func (u *User) SetAge(age uint8) {
 	u.Age = age
+}
+
+func (u *User) SetOwnByUsername(username string) {
+	u.OwnedByUsername = username
 }
