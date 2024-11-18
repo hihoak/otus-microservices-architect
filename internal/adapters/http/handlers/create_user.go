@@ -35,5 +35,5 @@ func (s Service) CreateUserHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusOK, usr)
 }

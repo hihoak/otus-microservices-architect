@@ -7,10 +7,10 @@ import (
 
 type Service struct {
 	usersService *service.UserService
-	kafkaClient  *kafka.Client
+	kafkaClient  *kafka.ClientUsersEvents
 }
 
-func NewService(usersService *service.UserService, kafkaClient *kafka.Client) *Service {
+func NewService(usersService *service.UserService, kafkaClient *kafka.ClientUsersEvents) *Service {
 	return &Service{
 		usersService: usersService,
 		kafkaClient:  kafkaClient,

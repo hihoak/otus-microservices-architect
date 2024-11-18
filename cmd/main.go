@@ -24,7 +24,7 @@ func main() {
 	}
 	usersRepo := repo.NewPostgresUsersRepository(postgresClient)
 	userService := service.NewUserService(usersRepo)
-	kafkaClient := kafka.NewKafka()
+	kafkaClient := kafka.NewKafkaUsersEvents()
 
 	app := handlers.NewService(userService, kafkaClient)
 

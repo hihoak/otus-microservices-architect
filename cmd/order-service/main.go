@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hihoak/otus-microservices-architect/cmd/order-service/domain/order"
 	repo2 "github.com/hihoak/otus-microservices-architect/cmd/order-service/domain/order/repo"
+	"github.com/hihoak/otus-microservices-architect/internal/adapters/kafka"
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/logger"
@@ -32,6 +33,8 @@ func main() {
 
 	ordersRepository := repo2.NewPostgresOrdersRepository(postgresClient)
 
+	kafkaClient := kafka.NewKafkaOrdersEvents()
+
 	appRouter.POST("/orders", func(c *gin.Context) {
 		body := CreateOrderBody{}
 		if err := c.BindJSON(&body); err != nil {
@@ -39,11 +42,16 @@ func main() {
 			return
 		}
 
-		if err := ordersRepository.CreateOrder(ctx, order.NewOrder(body.UserID, body.Price)); err != nil {
+		ord, err := ordersRepository.CreateOrder(ctx, order.NewOrder(body.UserID, body.Price))
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
+		if err = kafkaClient.WriteOrderCreatedEvent(ctx, ord); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{})
 	})
 

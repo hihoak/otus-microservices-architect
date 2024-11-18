@@ -19,21 +19,29 @@ func NewPostgresOrdersRepository(client *postgres.PostgresRepository) *PostgresO
 	return &PostgresOrdersRepository{client: client}
 }
 
-func (p *PostgresOrdersRepository) CreateOrder(ctx context.Context, order order.Order) error {
+func (p *PostgresOrdersRepository) CreateOrder(ctx context.Context, ord order.Order) (*order.Order, error) {
 	insertBuilder := sqlbuilder.NewInsertBuilder()
 	sql, args := insertBuilder.InsertInto("orders").
 		Cols("user_id", "price").
-		Values(order.UserID, order.Price).
+		Values(ord.UserID, ord.Price).
 		SQL(fmt.Sprintf("RETURNING %s", "id")).
 		BuildWithFlavor(sqlbuilder.PostgreSQL)
 
 	rows, err := p.client.Query(ctx, sql, args...)
 	if err != nil {
-		return fmt.Errorf("unexpected err when creating query: %w", err)
+		return nil, fmt.Errorf("unexpected err when creating query: %w", err)
 	}
 	defer rows.Close()
 
-	return nil
+	var id int64
+	err = pgxscan.ScanOne(&id, rows)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected err when list users: %w", err)
+	}
+
+	ord.ID = order.OrderID(id)
+
+	return &ord, nil
 }
 
 func (p *PostgresOrdersRepository) GetOrderByID(ctx context.Context, id order.OrderID) (*order.Order, error) {
