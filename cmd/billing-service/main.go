@@ -315,14 +315,14 @@ func listenOrdersEvents(ctx context.Context) {
 					if errors.Is(err, account.ErrUnsufficientFunds) {
 						if err := kafkaBilling.WriteBillingEvent(ctx, kafka2.MoneyWithdrawFailedEvent, unmarshalledEvent.Order.UserID); err != nil {
 							logger.Log.Error("failed to write billing event: %v", err)
-							continue
 						}
 
 						if err := ordersEventsReader.CommitMessages(ctx, m); err != nil {
 							logger.Log.Error("error committing messages: %v", err)
 						}
-						return
+						continue
 					}
+					logger.Log.Error("error withdrawMoney: %v", err)
 					continue
 				}
 
