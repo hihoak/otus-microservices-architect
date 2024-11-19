@@ -115,15 +115,20 @@ delete-notification-service:
 delete-infra:
 	./build/k8s/infra/delete.sh
 
-delete-all: delete-app delete-auth-service delete-infra delete-billing-service delete-order-service delete-notification-service
+delete-all: delete-app delete-auth-service delete-infra
 
 encrypt-secret:
 	gpg --batch --output build/k8s/migrations/secret.yaml.gpg --passphrase mypassword --symmetric build/k8s/migrations/secret.yaml
 
 decrypt-secret:
+	rm build/k8s/migrations/secret.yaml || true
 	gpg --batch --output build/k8s/migrations/secret.yaml --passphrase mypassword --decrypt build/k8s/migrations/secret.yaml.gpg
 
-install-world: install-infra install-postgres run-migrations install-auth-service install-app install-billing-service install-order-service install-notification-service
+sleep-30:
+	echo "wait 30 sec"
+	sleep 30
+
+install-world: install-infra install-postgres run-migrations install-auth-service install-app install-billing-service install-order-service install-notification-service sleep-30
 
 check-hw: decrypt-secret install-world test-postman
 
