@@ -132,3 +132,8 @@ load-test-create-user:
 
 load-test-get-user:
 	ab -c 2 -s 2 -t 1200 http://arch.homework/otusapp/artem/users
+
+generate-docs:
+	find docs -type f | grep -E "\.svg$$" | xargs -L1 rm
+
+	plantuml -tsvg -overwrite docs/**/**
