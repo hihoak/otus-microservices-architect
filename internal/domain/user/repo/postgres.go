@@ -111,7 +111,7 @@ func (p *PostgresUsersRepository) ListUser(ctx context.Context, requesterUsernam
 	updateBuilder := sqlbuilder.NewSelectBuilder()
 	sql, args := updateBuilder.Select("id", "first_name", "sur_name", "age", "owned_by_username").
 		From("users").
-		Where(updateBuilder.Or(updateBuilder.Equal("owned_by_username", requesterUsername), updateBuilder.Equal("owned_by_username", ""))).
+		Where(updateBuilder.Or(updateBuilder.Equal("owned_by_username", requesterUsername))).
 		BuildWithFlavor(sqlbuilder.PostgreSQL)
 
 	users := []user.User{}

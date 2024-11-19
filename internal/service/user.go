@@ -29,7 +29,7 @@ func (s *UserService) GetUser(ctx context.Context, id uint64, requesterUsername 
 	if err != nil {
 		return nil, fmt.Errorf("GetUser: %w", err)
 	}
-	if u.OwnedByUsername == "" || u.OwnedByUsername == requesterUsername {
+	if u.OwnedByUsername == requesterUsername {
 		return u, nil
 	}
 	return nil, fmt.Errorf("GetUser: %w", user.ErrNotFound)

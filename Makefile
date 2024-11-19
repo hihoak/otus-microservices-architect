@@ -4,6 +4,7 @@ test-postman:
 	newman run --verbose tests/postman/hw4_tests.postman_collection.json
 	newman run --verbose tests/postman/hw5_tests.postman_collection.json
 	newman run --verbose tests/postman/hw6_tests.postman_collection.json
+	newman run --verbose tests/postman/hw7_tests.postman_collection.json
 
 install-postgres:
 	./build/k8s/infra/postgresql/install.sh
