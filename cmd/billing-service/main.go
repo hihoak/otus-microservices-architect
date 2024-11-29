@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hihoak/otus-microservices-architect/cmd/billing-service/domain/account"
 	"github.com/hihoak/otus-microservices-architect/cmd/billing-service/domain/account/repo"
+	"github.com/hihoak/otus-microservices-architect/cmd/order-service/sagas/create_order"
 	kafka2 "github.com/hihoak/otus-microservices-architect/internal/adapters/kafka"
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
@@ -20,7 +21,7 @@ import (
 )
 
 var accountRepository *repo.PostgresAccountsRepository
-var kafkaBilling *kafka2.ClientBillingEvents
+var createOrderSagaProducer *kafka2.ClientCreateOrderSagaCommand
 
 type CreateAccountBody struct {
 	UserID int64 `json:"user_id"`
@@ -45,7 +46,7 @@ func main() {
 	}
 
 	accountRepository = repo.NewPostgresAccountsRepository(postgresClient)
-	kafkaBilling = kafka2.NewKafkaBillingEvents()
+	createOrderSagaProducer = kafka2.NewKafkaCreateOrderSagaProducer()
 
 	appRouter.POST("/accounts", createAccountGin)
 
@@ -87,19 +88,11 @@ func main() {
 			return
 		}
 
-		acc, err := accountRepository.GetAccountByID(ctx, int64(id))
-		if err != nil {
+		if err := topUpMoney(ctx, int64(id), body.Amount); err != nil {
 			if errors.Is(err, account.ErrNotFound) {
 				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		acc.TopUp(body.Amount)
-
-		if err := accountRepository.UpdateAccount(ctx, acc); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -110,14 +103,58 @@ func main() {
 	appRouter.PUT("/accounts/:id/withdraw", withdrawMoneyGin)
 
 	listenUsersEvents(ctx)
-	listenOrdersEvents(ctx)
-
+	listenCreateOrderSagaEvents(ctx)
 	logger.Log.Info("starting service on address 0.0.0.0:9000...")
 	appRouter.Run(fmt.Sprintf(":%s", "9000"))
 }
 
+func topUpMoneyByUserID(ctx context.Context, userID int64, amount int64) error {
+	acc, err := accountRepository.GetAccountByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	acc.TopUp(amount)
+
+	if err := accountRepository.UpdateAccount(ctx, acc); err != nil {
+		return err
+	}
+	return nil
+}
+
+func topUpMoney(ctx context.Context, id int64, amount int64) error {
+	acc, err := accountRepository.GetAccountByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	acc.TopUp(amount)
+
+	if err := accountRepository.UpdateAccount(ctx, acc); err != nil {
+		return err
+	}
+	return nil
+}
+
 func withdrawMoney(ctx context.Context, id int64, amount int64) error {
 	acc, err := accountRepository.GetAccountByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := acc.Withdraw(amount); err != nil {
+		return err
+	}
+
+	if err := accountRepository.UpdateAccount(ctx, acc); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func withdrawMoneyByUserID(ctx context.Context, userID int64, amount int64) error {
+	acc, err := accountRepository.GetAccountByUserID(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -255,89 +292,63 @@ func listenUsersEvents(ctx context.Context) {
 	}()
 }
 
-func listenOrdersEvents(ctx context.Context) {
+func listenCreateOrderSagaEvents(ctx context.Context) {
 	// make a new reader that consumes from topic-A
-	ordersEventsReader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:               []string{"kafka.kafka.svc.cluster.local:9092"},
-		GroupID:               "billing-service-orders",
-		Topic:                 "orders-events",
-		MaxWait:               time.Millisecond * 200,
-		JoinGroupBackoff:      time.Millisecond * 500,
-		HeartbeatInterval:     time.Millisecond * 200,
-		WatchPartitionChanges: true,
-	})
+	consumer := kafka2.NewKafkaCreateOrderSagaConsumer("billing-service")
 
 	go func() {
 		defer func() {
-			if err := ordersEventsReader.Close(); err != nil {
+			if err := consumer.Close(); err != nil {
 				logger.Log.Error("failed to close reader:", err)
 			}
 		}()
 
+	readMessagesLoop:
 		for {
-			m, err := ordersEventsReader.FetchMessage(context.Background())
+			msg, kfkMsg, err := consumer.FetchMessage(context.Background())
 			if err != nil {
+				if errors.Is(err, kafka2.ErrUnmarshall) {
+					if err := consumer.CommitMessage(ctx, kfkMsg); err != nil {
+						logger.Log.Error("failed to commit message:", err)
+					}
+					continue
+				}
 				logger.Log.Error("failed to fetch message:", err)
 				break
 			}
-			var unmarshalledEvent kafka2.OrderEvent
-			err = json.Unmarshal(m.Value, &unmarshalledEvent)
-			if err != nil {
-				logger.Log.Error("error unmarshalling event: %v", err)
-				if err := ordersEventsReader.CommitMessages(ctx, m); err != nil {
-					logger.Log.Error("error committing messages: %v", err)
-				}
-				continue
-			}
 
-			logger.Log.Info("consumed event: %v", unmarshalledEvent)
-			switch unmarshalledEvent.EventType {
-			case kafka2.OrderCreatedEvent:
-				acc, err := accountRepository.GetAccountByUserID(ctx, unmarshalledEvent.Order.UserID)
+			logger.Log.Info("consumed event: %v", msg)
+			switch msg.Name {
+			case create_order.WithdrawMoneyCommand:
+				if err = withdrawMoneyByUserID(ctx, msg.Order.UserID, msg.Order.Price); err != nil {
+					if errors.Is(err, account.ErrNotFound) || errors.Is(err, account.ErrUnsufficientFunds) {
+						err = createOrderSagaProducer.WriteEvent(ctx, string(create_order.WithdrawMoneyFailedEvent), &msg.Order)
+						if err != nil {
+							logger.Log.Error("failed to write event:", err)
+						}
+					} else {
+						logger.Log.Error("failed to withdraw money:", err)
+						continue readMessagesLoop
+					}
+				}
+				err = createOrderSagaProducer.WriteEvent(ctx, string(create_order.WithdrawMoneySucceededEvent), &msg.Order)
 				if err != nil {
-					if errors.Is(err, account.ErrNotFound) {
-						if err := ordersEventsReader.CommitMessages(ctx, m); err != nil {
-							logger.Log.Error("error committing messages: %v", err)
-						}
-						continue
-					}
-					logger.Log.Error("error get account by user ID: %v", err)
-					continue
+					logger.Log.Error("failed to write event:", err)
 				}
-
-				if err := withdrawMoney(ctx, int64(acc.ID), unmarshalledEvent.Order.Price); err != nil {
-					if errors.Is(err, account.ErrNotFound) {
-						if err := ordersEventsReader.CommitMessages(ctx, m); err != nil {
-							logger.Log.Error("error committing messages: %v", err)
-						}
-						continue
-					}
-					if errors.Is(err, account.ErrUnsufficientFunds) {
-						if err := kafkaBilling.WriteBillingEvent(ctx, kafka2.MoneyWithdrawFailedEvent, unmarshalledEvent.Order.UserID); err != nil {
-							logger.Log.Error("failed to write billing event: %v", err)
-						}
-
-						if err := ordersEventsReader.CommitMessages(ctx, m); err != nil {
-							logger.Log.Error("error committing messages: %v", err)
-						}
-						continue
-					}
-					logger.Log.Error("error withdrawMoney: %v", err)
-					continue
+			case create_order.UndoWithdrawMoneyCommand:
+				if err = topUpMoneyByUserID(ctx, msg.Order.UserID, msg.Order.Price); err != nil {
+					logger.Log.Error("failed to reserve stock:", err)
+					continue readMessagesLoop
 				}
-
-				if err := kafkaBilling.WriteBillingEvent(ctx, kafka2.MoneyWithdrawSucceededEvent, unmarshalledEvent.Order.UserID); err != nil {
-					logger.Log.Error("failed to write billing event: %v", err)
-					continue
+				err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.UndoWithdrawMoneySucceededEvent), &msg.Order)
+				if err != nil {
+					logger.Log.Error("failed to write event:", err)
 				}
-				if err := ordersEventsReader.CommitMessages(ctx, m); err != nil {
-					logger.Log.Error("error committing messages: %v", err)
-				}
-				continue
 			default:
-				log.Printf("unknown user event type: %v", unmarshalledEvent.EventType)
+				logger.Log.Debug("unsupported event type: %v", msg.Name)
 			}
-			if err := ordersEventsReader.CommitMessages(ctx, m); err != nil {
+
+			if err := consumer.CommitMessage(ctx, kfkMsg); err != nil {
 				logger.Log.Error("error committing messages: %v", err)
 			}
 		}

@@ -1,0 +1,1092 @@
+{
+	"info": {
+		"_postman_id": "3a801adc-6205-4f5b-9839-25587f8fb0bb",
+		"name": "hw_8_create_order_success",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "24643335"
+	},
+	"item": [
+		{
+			"name": "prepare_create user 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"})",
+							"",
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(100);",
+							"});",
+							"",
+							"",
+							"pm.globals.set(\"user1.username\", \"artem\");",
+							"pm.globals.set(\"user1.password\", \"1111\");"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"artem\",\n    \"password\": \"1111\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/auth/artem/sign-up",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"auth",
+						"artem",
+						"sign-up"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "prepare_user1 creates user Artem",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"    pm.globals.set(\"user1.id\", pm.response.json().ID)",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"first_name\": \"artem\",\n    \"sur_name\": \"some\",\n    \"age\": 20\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/otusapp/artem/users",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"otusapp",
+						"artem",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "prepare_create_stock1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"    pm.globals.set(\"item1.id\", pm.response.json().ID)",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"count\": 200\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/warehouse/artem/items",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"warehouse",
+						"artem",
+						"items"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "prepare_create_stock2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"    pm.globals.set(\"item2.id\", pm.response.json().ID)",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"count\": 10\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/warehouse/artem/items",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"warehouse",
+						"artem",
+						"items"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "prepare_create_slot1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"    pm.globals.set(\"delivery_slot1.id\", pm.response.json().ID)",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"from_time\": \"2024-11-28T15:00:00Z\",\n    \"to_time\": \"2024-11-28T16:00:00Z\",\n    \"deliveries_left\": 100\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/delivery/artem/delivery-slots",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"delivery",
+						"artem",
+						"delivery-slots"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get user1 billing account",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(pm.response.json().Amount).to.equal(0)",
+							"    pm.globals.set(\"user1.account.id\", pm.response.json().ID)",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"setTimeout(function(){}, 1000);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/billing/artem/accounts?user_id={{user1.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"billing",
+						"artem",
+						"accounts"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": "{{user1.id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "top up 650 to user1 account",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"amount\": 650\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/billing/artem/accounts/{{user1.account.id}}/top-up",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"billing",
+						"artem",
+						"accounts",
+						"{{user1.account.id}}",
+						"top-up"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check user1 account money 650",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(pm.response.json().Amount).to.equal(650)",
+							"    pm.globals.set(\"user1.account.id\", pm.response.json().ID)",
+							"});",
+							"",
+							"pm.test(\"check money\", function () {",
+							"    pm.expect(pm.response.json().Amount).to.equal(650)",
+							"    pm.globals.set(\"user1.account.id\", pm.response.json().ID)",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/billing/artem/accounts?user_id={{user1.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"billing",
+						"artem",
+						"accounts"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": "{{user1.id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "user1 create order for 350 price",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"     pm.globals.set(\"order1.id\", pm.response.json().ID)",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.globals.set(\"order1.price\", 350)",
+							"pm.globals.set(\"item1.reserved\", 100)",
+							"pm.globals.set(\"item2.reserved\", 10)",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user2.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user2.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user_id\": {{user1.id}},\n    \"price\": 350,\n    \"item_ids_with_stocks\": {\n        \"{{item1.id}}\": 100,\n        \"{{item2.id}}\": 10\n    },\n    \"delivery_slot_id\": {{delivery_slot1.id}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/orders/artem/orders",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"orders",
+						"artem",
+						"orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check user1 account money",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(pm.response.json().Amount).to.equal(300)",
+							"    pm.globals.set(\"user1.account.id\", pm.response.json().ID)",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"setTimeout(function(){}, 10000);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/billing/artem/accounts?user_id={{user1.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"billing",
+						"artem",
+						"accounts"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": "{{user1.id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check item1 stocks available",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(pm.response.json().Count).to.equal(100)",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/warehouse/artem/items/{{item1.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"warehouse",
+						"artem",
+						"items",
+						"{{item1.id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check item2 stocks available Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(pm.response.json().Count).to.equal(0)",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/warehouse/artem/items/{{item2.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"warehouse",
+						"artem",
+						"items",
+						"{{item2.id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check slot1 deliveries left",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(pm.response.json().DeliveriesLeft).to.equal(99)",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/delivery/artem/delivery-slots/{{delivery_slot1.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"delivery",
+						"artem",
+						"delivery-slots",
+						"{{delivery_slot1.id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check success notification",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"",
+							"    pm.expect(pm.response.json().notifications).to.be.an(\"array\")",
+							"})",
+							"",
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response has the required schema for users\", function () {",
+							"    const responseData = pm.response.json();",
+							"    ",
+							"    pm.expect(responseData).to.be.an('object');",
+							"    pm.expect(responseData.notifications).to.exist.and.to.be.an('array');",
+							"});",
+							"",
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"",
+							"    pm.expect(pm.response.json().notifications).length(1)",
+							"    pm.expect(pm.response.json().notifications[0].Text).to.equal(\"success to process order\")",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/notifications/artem/notifications?user_id={{user1.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"notifications",
+						"artem",
+						"notifications"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": "{{user1.id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check order success status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"})",
+							"",
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"});",
+							"",
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"",
+							"    pm.expect(pm.response.json().status).to.equal(\"OrderSucceeded\")",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/orders/artem/orders/{{order1.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"orders",
+						"artem",
+						"orders",
+						"{{order1.id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "delete user1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"})"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/otusapp/artem/users/{{user1.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"otusapp",
+						"artem",
+						"users",
+						"{{user1.id}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

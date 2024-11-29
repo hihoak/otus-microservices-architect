@@ -2,16 +2,16 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hihoak/otus-microservices-architect/cmd/notification-service/domain/notification"
 	"github.com/hihoak/otus-microservices-architect/cmd/notification-service/domain/notification/repo"
+	"github.com/hihoak/otus-microservices-architect/cmd/order-service/sagas/create_order"
 	kafka2 "github.com/hihoak/otus-microservices-architect/internal/adapters/kafka"
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/logger"
-	"github.com/segmentio/kafka-go"
 	"log"
 	"net/http"
 	"strconv"
@@ -24,6 +24,7 @@ type CreateNotificationBody struct {
 }
 
 var notificationsRepository *repo.PostgresNotificationsRepository
+var createOrderSagaProducer *kafka2.ClientCreateOrderSagaCommand
 
 func main() {
 	ctx := context.Background()
@@ -34,6 +35,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("init postgres client: %v", err)
 	}
+
+	createOrderSagaProducer = kafka2.NewKafkaCreateOrderSagaProducer()
 
 	notificationsRepository = repo.NewPostgresNotificationsRepository(postgresClient)
 
@@ -75,62 +78,54 @@ func main() {
 		})
 	})
 
-	listenBillingEvents(ctx)
+	listenCreateOrderSagaEvents(ctx)
 
 	logger.Log.Info("starting service on address 0.0.0.0:9000...")
 	appRouter.Run(fmt.Sprintf(":%s", "9000"))
 }
 
-func listenBillingEvents(ctx context.Context) {
+func listenCreateOrderSagaEvents(ctx context.Context) {
 	// make a new reader that consumes from topic-A
-	billingEventsReader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  []string{"kafka.kafka.svc.cluster.local:9092"},
-		GroupID:  "notification-service",
-		Topic:    "billing-events",
-		MaxBytes: 10e6, // 10MB
-	})
+	consumer := kafka2.NewKafkaCreateOrderSagaConsumer("notifications-service")
 
 	go func() {
 		defer func() {
-			if err := billingEventsReader.Close(); err != nil {
+			if err := consumer.Close(); err != nil {
 				logger.Log.Error("failed to close reader:", err)
 			}
 		}()
 
+	readMessagesLoop:
 		for {
-			m, err := billingEventsReader.FetchMessage(context.Background())
+			msg, kfkMsg, err := consumer.FetchMessage(ctx)
 			if err != nil {
+				if errors.Is(err, kafka2.ErrUnmarshall) {
+					if err := consumer.CommitMessage(ctx, kfkMsg); err != nil {
+						logger.Log.Error("failed to commit message:", err)
+					}
+					continue
+				}
 				logger.Log.Error("failed to fetch message:", err)
 				break
 			}
-			var unmarshalledEvent kafka2.BillingEvent
-			err = json.Unmarshal(m.Value, &unmarshalledEvent)
-			if err != nil {
-				logger.Log.Error("error unmarshalling event: %v", err)
-				if err := billingEventsReader.CommitMessages(ctx, m); err != nil {
-					logger.Log.Error("error committing messages: %v", err)
-				}
-				continue
-			}
 
-			logger.Log.Info("consumed event: %v", unmarshalledEvent)
-			switch unmarshalledEvent.EventType {
-			case kafka2.MoneyWithdrawFailedEvent:
-				err := notificationsRepository.CreateNotification(ctx, notification.NewNotification(unmarshalledEvent.UserID, "failed to withdraw money", time.Now()))
-				if err != nil {
-					logger.Log.Error("failed to create notification: %v", err)
-					continue
+			logger.Log.Info("consumed event: %v", msg)
+			switch msg.Name {
+			case create_order.NotifyCommand:
+				if err := notificationsRepository.CreateNotification(ctx, notification.NewNotification(msg.Order.UserID, "success to process order", time.Now())); err != nil {
+					logger.Log.Error("failed to create notification:", err)
+					continue readMessagesLoop
 				}
-			case kafka2.MoneyWithdrawSucceededEvent:
-				err := notificationsRepository.CreateNotification(ctx, notification.NewNotification(unmarshalledEvent.UserID, "success to withdraw money", time.Now()))
+
+				err = createOrderSagaProducer.WriteEvent(ctx, string(create_order.NotifySucceededEvent), &msg.Order)
 				if err != nil {
-					logger.Log.Error("failed to create notification: %v", err)
-					continue
+					logger.Log.Error("failed to write event:", err)
 				}
 			default:
-				log.Printf("unknown billing event type: %v", unmarshalledEvent.EventType)
+				logger.Log.Debug("unsupported event type: %v", msg.Name)
 			}
-			if err := billingEventsReader.CommitMessages(ctx, m); err != nil {
+
+			if err := consumer.CommitMessage(ctx, kfkMsg); err != nil {
 				logger.Log.Error("error committing messages: %v", err)
 			}
 		}

@@ -18,7 +18,7 @@ spec:
       containers:
         - name: order-service
           imagePullPolicy: Always
-          image: soundsofanarchy/otus-microservices-architect:v1.3.0-order-service-arm
+          image: soundsofanarchy/otus-microservices-architect:v2.0.0-order-service-arm
           ports:
             - containerPort: 9000
           envFrom:

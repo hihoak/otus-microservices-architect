@@ -7,6 +7,10 @@ provisioning:
       replicationFactor: 1
     - name: users-events
       replicationFactor: 1
+    - name: create-order-saga-event
+      replicationFactor: 1
+    - name: create-order-saga-command
+      replicationFactor: 1
 
 listeners:
   client:

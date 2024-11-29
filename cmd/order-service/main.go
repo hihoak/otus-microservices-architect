@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hihoak/otus-microservices-architect/cmd/order-service/domain/order"
 	repo2 "github.com/hihoak/otus-microservices-architect/cmd/order-service/domain/order/repo"
+	"github.com/hihoak/otus-microservices-architect/cmd/order-service/sagas"
+	"github.com/hihoak/otus-microservices-architect/cmd/order-service/sagas/create_order"
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/kafka"
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
@@ -17,8 +19,10 @@ import (
 )
 
 type CreateOrderBody struct {
-	UserID int64 `json:"user_id"`
-	Price  int64 `json:"price"`
+	UserID            int64           `json:"user_id"`
+	Price             int64           `json:"price"`
+	ItemIDsWithStocks map[int64]int64 `json:"item_ids_with_stocks"`
+	DeliverySlotID    int64           `json:"delivery_slot_id"`
 }
 
 func main() {
@@ -33,7 +37,11 @@ func main() {
 
 	ordersRepository := repo2.NewPostgresOrdersRepository(postgresClient)
 
-	kafkaClient := kafka.NewKafkaOrdersEvents()
+	createOrderSagaProducer := kafka.NewKafkaCreateOrderSagaProducer()
+
+	orchestrator := sagas.NewOrchestrator(ctx, ordersRepository, createOrderSagaProducer)
+	orchestrator.Start(ctx)
+	defer orchestrator.Stop()
 
 	appRouter.POST("/orders", func(c *gin.Context) {
 		body := CreateOrderBody{}
@@ -42,17 +50,23 @@ func main() {
 			return
 		}
 
-		ord, err := ordersRepository.CreateOrder(ctx, order.NewOrder(body.UserID, body.Price))
+		ord, err := ordersRepository.CreateOrder(ctx, order.NewOrder(body.UserID, body.Price, body.ItemIDsWithStocks, body.DeliverySlotID))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		if err = kafkaClient.WriteOrderCreatedEvent(ctx, ord); err != nil {
+		command, err := create_order.InitCreateOrderSaga(ord.Status).GetNextCommand()
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{})
+
+		if err = createOrderSagaProducer.WriteEvent(ctx, command, ord); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, ord)
 	})
 
 	appRouter.GET("/orders/:id", func(c *gin.Context) {

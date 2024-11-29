@@ -9,7 +9,7 @@ spec:
       containers:
         - name: backend-migrations
           imagePullPolicy: Always
-          image: docker.io/soundsofanarchy/otus-microservices-architect:v1.3.0-migrations-arm
+          image: docker.io/soundsofanarchy/otus-microservices-architect:v2.0.0-migrations-arm
           envFrom:
             - secretRef:
                 name: backend
