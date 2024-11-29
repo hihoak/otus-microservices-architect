@@ -1,0 +1,14 @@
+@startuml
+actor user as user
+queue "orders-events" as orders_kafka
+queue "billing-events" as billing_kafka
+
+user -> "order-service" : POST /orders
+"order-service" -> orders_kafka : OrderCreated
+"order-service" -> user : OK
+
+orders_kafka -> "billing-service" : OrderCreated -> POST /accounts/{id}/withdraw
+"billing-service" -> billing_kafka : MoneyWithdrawSucceeded / MoneyWithdrawFailed
+
+billing_kafka -> "notification-service" : MoneyReserved -> POST /notifications
+@enduml

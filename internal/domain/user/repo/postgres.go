@@ -46,7 +46,7 @@ func (p *PostgresUsersRepository) GetUser(ctx context.Context, id user.UserID) (
 	return &u, nil
 }
 
-func (p *PostgresUsersRepository) CreateUser(ctx context.Context, u user.User) error {
+func (p *PostgresUsersRepository) CreateUser(ctx context.Context, u user.User) (*user.User, error) {
 	insertBuilder := sqlbuilder.NewInsertBuilder()
 	sql, args := insertBuilder.InsertInto("users").
 		Cols("first_name", "sur_name", "age", "owned_by_username").
@@ -56,11 +56,18 @@ func (p *PostgresUsersRepository) CreateUser(ctx context.Context, u user.User) e
 
 	rows, err := p.client.Query(ctx, sql, args...)
 	if err != nil {
-		return fmt.Errorf("unexpected err when creating query: %w", err)
+		return nil, fmt.Errorf("unexpected err when creating query: %w", err)
 	}
 	defer rows.Close()
 
-	return nil
+	var id int64
+	err = pgxscan.ScanOne(&id, rows)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected err when list users: %w", err)
+	}
+
+	u.ID = user.UserID(id)
+	return &u, nil
 }
 
 func (p *PostgresUsersRepository) UpdateUser(ctx context.Context, u *user.User) error {
@@ -104,7 +111,7 @@ func (p *PostgresUsersRepository) ListUser(ctx context.Context, requesterUsernam
 	updateBuilder := sqlbuilder.NewSelectBuilder()
 	sql, args := updateBuilder.Select("id", "first_name", "sur_name", "age", "owned_by_username").
 		From("users").
-		Where(updateBuilder.Or(updateBuilder.Equal("owned_by_username", requesterUsername), updateBuilder.Equal("owned_by_username", ""))).
+		Where(updateBuilder.Or(updateBuilder.Equal("owned_by_username", requesterUsername))).
 		BuildWithFlavor(sqlbuilder.PostgreSQL)
 
 	users := []user.User{}

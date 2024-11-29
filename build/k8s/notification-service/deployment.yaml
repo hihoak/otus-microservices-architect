@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: app
+  labels:
+    app: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          imagePullPolicy: Always
+          image: soundsofanarchy/otus-microservices-architect:v1.3.0-notification-service-arm
+          ports:
+            - containerPort: 9000
+          envFrom:
+            - secretRef:
+                name: backend

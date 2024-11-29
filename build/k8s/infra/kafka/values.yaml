@@ -1,0 +1,15 @@
+provisioning:
+  enabled: true
+  topics:
+    - name: orders-events
+      replicationFactor: 1
+    - name: billing-events
+      replicationFactor: 1
+    - name: users-events
+      replicationFactor: 1
+
+listeners:
+  client:
+    protocol: 'PLAINTEXT'
+  controller:
+    protocol: 'PLAINTEXT'

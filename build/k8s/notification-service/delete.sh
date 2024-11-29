@@ -4,4 +4,4 @@ echo "switching to minikube cluster"
 kubectx minikube
 
 echo "delete namespace"
-kubectl delete namespace --force app
+kubectl delete -f build/k8s/notification-service
