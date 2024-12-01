@@ -2,9 +2,11 @@ package repo
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/georgysavva/scany/pgxscan"
+	"github.com/google/uuid"
 	"github.com/hihoak/otus-microservices-architect/cmd/order-service/domain/order"
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/huandu/go-sqlbuilder"
@@ -62,6 +64,68 @@ func fromHstoreToMap(rawHstore string) (map[int64]int64, error) {
 		res[key] = value
 	}
 	return res, nil
+}
+
+type CreateOrderResponse struct {
+	RequestID uuid.UUID `database:"request_id"`
+	Response  string    `database:"response"`
+}
+
+var (
+	ErrCreateOrderResponseNotFound = errors.New("create order response not found")
+)
+
+func (p *PostgresOrdersRepository) GetCreateOrderResponse(ctx context.Context, requestID uuid.UUID) (*order.Order, error) {
+	selectBuilder := sqlbuilder.NewSelectBuilder()
+	sql, args := selectBuilder.Select("request_id", "response").
+		From("create_order_responses").
+		Where(selectBuilder.Equal("request_id", requestID.String())).
+		ForUpdate().
+		BuildWithFlavor(sqlbuilder.PostgreSQL)
+
+	rows, err := p.client.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected err when creating query: %w", err)
+	}
+	defer rows.Close()
+
+	createOrderResponse := CreateOrderResponse{}
+
+	err = pgxscan.ScanOne(&createOrderResponse, rows)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("can't find order create order response by id %q: %s: %w", requestID, err.Error(), ErrCreateOrderResponseNotFound)
+		}
+		return nil, fmt.Errorf("unexpected err when finding create order reponse by id %d: %w", requestID, err)
+	}
+
+	var ord order.Order
+	if err := json.Unmarshal([]byte(createOrderResponse.Response), &ord); err != nil {
+		return nil, fmt.Errorf("unexpected err when unmarshalling create order response into order struct: %w", err)
+	}
+
+	return &ord, nil
+}
+
+func (p *PostgresOrdersRepository) CreateCreateOrderResponse(ctx context.Context, requestID uuid.UUID, ord *order.Order) error {
+	insertBuilder := sqlbuilder.NewInsertBuilder()
+
+	response, err := json.Marshal(ord)
+	if err != nil {
+		return fmt.Errorf("unexpected err when marshalling create order response to json: %w", err)
+	}
+	sql, args := insertBuilder.InsertInto("create_order_responses").
+		Cols("request_id", "response").
+		Values(requestID.String(), string(response)).
+		BuildWithFlavor(sqlbuilder.PostgreSQL)
+
+	rows, err := p.client.Query(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("unexpected err when creating query: %w", err)
+	}
+	defer rows.Close()
+
+	return nil
 }
 
 func (p *PostgresOrdersRepository) CreateOrder(ctx context.Context, ord order.Order) (*order.Order, error) {

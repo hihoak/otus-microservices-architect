@@ -20,6 +20,7 @@ require (
 	github.com/go-playground/validator/v10 v10.20.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/huandu/go-sqlbuilder v1.30.0 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect

@@ -626,7 +626,7 @@
 					"listen": "prerequest",
 					"script": {
 						"exec": [
-							"setTimeout(function(){}, 10000);"
+							"setTimeout(function(){}, 14000);"
 						],
 						"type": "text/javascript",
 						"packages": {}
@@ -973,7 +973,7 @@
 							"pm.test(\"Status test and res\", function() {",
 							"    pm.response.to.have.status(200)",
 							"",
-							"    pm.expect(pm.response.json().status).to.equal(\"OrderFailed\")",
+							"    pm.expect(pm.response.json().Status).to.equal(\"OrderFailed\")",
 							"})",
 							""
 						],

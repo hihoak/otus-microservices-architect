@@ -13,7 +13,7 @@ type OrderID int64
 
 type Order struct {
 	ID                OrderID         `db:"id"`
-	Status            string          `json:"status"`
+	Status            string          `db:"status"`
 	UserID            int64           `db:"user_id"`
 	Price             int64           `db:"price"`
 	ItemIDsWithStocks map[int64]int64 `db:"item_ids_with_stocks"`
