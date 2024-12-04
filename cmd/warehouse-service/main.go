@@ -13,6 +13,7 @@ import (
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/logger"
 	"github.com/hihoak/otus-microservices-architect/pkg/kafka_deduplicator"
+	"github.com/hihoak/otus-microservices-architect/pkg/transactional_outbox"
 	"log"
 	"net/http"
 	"strconv"
@@ -43,6 +44,10 @@ func main() {
 
 	itemsRepository = repo.NewPostgresItemsRepository(postgresClient)
 	createOrderSagaProducer = kafka2.NewKafkaCreateOrderSagaProducer()
+
+	outbox := transactional_outbox.NewTransactionalOutbox(ctx, "transactional_outbox_create_order_saga_events_warehouse_service", createOrderSagaProducer, postgresClient)
+	outbox.Start()
+	defer outbox.Close()
 
 	appRouter.POST("/items", func(c *gin.Context) {
 		body := CreateItemBody{}
@@ -176,37 +181,29 @@ func listenCreateOrderSagaEvents(ctx context.Context) {
 			logger.Log.Info("consumed event: %v", msg)
 			switch msg.Name {
 			case create_order.ReserveStockCommand:
-				var sendFail bool
 				if err = deduplicator.WithDeduplicate(ctx, fmt.Sprintf("%d:%s", msg.ID, msg.Name), func(ctx context.Context) error {
 					return postgresClient.BeginTxFunc(ctx, func(ctx context.Context) error {
 						var reserveErr error
 						for itemID, count := range msg.Order.ItemIDsWithStocks {
 							if reserveErr = reserveStock(ctx, uint64(itemID), uint64(count)); reserveErr != nil {
 								if errors.Is(reserveErr, items.ErrNotFound) || errors.Is(reserveErr, items.ErrNotEnoughItems) {
-									sendFail = true
 									logger.Log.Info("unable to reserve stock: %w", reserveErr)
-									break
+									if err = itemsRepository.CreateEvent(ctx, create_order.ReserveStockFailedEvent, &msg.Order); err != nil {
+										return fmt.Errorf("faield to write event about stocl failed: %w", err)
+									}
+									return nil
 								}
 								return fmt.Errorf("failed to reserve stock: %w", reserveErr)
 							}
+						}
+						if err = itemsRepository.CreateEvent(ctx, create_order.ReserveStockSucceededEvent, &msg.Order); err != nil {
+							return fmt.Errorf("faield to write event about stocl failed: %w", err)
 						}
 						return nil
 					})
 				}); err != nil {
 					logger.Log.Error("failed to reserve stock:", err)
 					continue readMessagesLoop
-				}
-
-				if sendFail {
-					err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.ReserveStockFailedEvent), &msg.Order)
-					if err != nil {
-						logger.Log.Error("failed to write event:", err)
-					}
-				} else {
-					err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.ReserveStockSucceededEvent), &msg.Order)
-					if err != nil {
-						logger.Log.Error("failed to write event:", err)
-					}
 				}
 			case create_order.UndoReserveStockCommand:
 				if err = deduplicator.WithDeduplicate(ctx, fmt.Sprintf("%d:%s", msg.ID, msg.Name), func(ctx context.Context) error {
@@ -216,16 +213,14 @@ func listenCreateOrderSagaEvents(ctx context.Context) {
 								return fmt.Errorf("failed to reserve stock: %w", undoReserveErr)
 							}
 						}
+						if err = itemsRepository.CreateEvent(ctx, create_order.UndoReserveStockSucceededEvent, &msg.Order); err != nil {
+							return fmt.Errorf("faield to write event about stocl failed: %w", err)
+						}
 						return nil
 					})
 				}); err != nil {
 					logger.Log.Error("failed to reserve stock:", err)
 					continue readMessagesLoop
-				}
-
-				err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.UndoReserveStockSucceededEvent), &msg.Order)
-				if err != nil {
-					logger.Log.Error("failed to write event:", err)
 				}
 			default:
 				logger.Log.Debug("unsupported event type: %v", msg.Name)

@@ -14,6 +14,7 @@ import (
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/logger"
 	"github.com/hihoak/otus-microservices-architect/pkg/kafka_deduplicator"
+	"github.com/hihoak/otus-microservices-architect/pkg/transactional_outbox"
 	"log"
 	"net/http"
 	"strconv"
@@ -42,6 +43,9 @@ func main() {
 
 	deliverySlotsRepository = repo.NewPostgresDeliverySlotsRepository(postgresClient)
 	createOrderSagaProducer = kafka2.NewKafkaCreateOrderSagaProducer()
+	outbox := transactional_outbox.NewTransactionalOutbox(ctx, "transactional_outbox_create_order_saga_events_delivery_service", createOrderSagaProducer, postgresClient)
+	outbox.Start()
+	defer outbox.Close()
 
 	appRouter.POST("/delivery-slots", func(c *gin.Context) {
 		body := CreateDeliverySlotBody{}
@@ -140,34 +144,26 @@ func listenCreateOrderSagaEvents(ctx context.Context) {
 			logger.Log.Info("consumed event: %v", msg)
 			switch msg.Name {
 			case create_order.ReserveSlotCommand:
-				var sendFail bool
 				if err = deduplicator.WithDeduplicate(ctx, fmt.Sprintf("%d:%s", msg.ID, msg.Name), func(ctx context.Context) error {
 					return postgresClient.BeginTxFunc(ctx, func(ctx context.Context) error {
 						if err = reserveDeliverySlot(ctx, uint64(msg.Order.DeliverySlotID)); err != nil {
 							if !(errors.Is(err, delivery_slots.ErrNotFound) || errors.Is(err, delivery_slots.ErrNotEnoughDeliveries)) {
 								return fmt.Errorf("failed to reserve slot: %w", err)
 							}
-							sendFail = true
 							logger.Log.Info("it is not possible to reserve slot: ", err)
+							if err = deliverySlotsRepository.CreateEvent(ctx, create_order.ReserveSlotFailedEvent, &msg.Order); err != nil {
+								return fmt.Errorf("failed to create event reserve slot failed: %w", err)
+							}
 							return nil
+						}
+						if err = deliverySlotsRepository.CreateEvent(ctx, create_order.ReserveSlotSucceededEvent, &msg.Order); err != nil {
+							return fmt.Errorf("failed to create event reserve slot failed: %w", err)
 						}
 						return nil
 					})
 				}); err != nil {
 					logger.Log.Error("failed to reserve slot:", err)
 					continue readMessagesLoop
-				}
-
-				if sendFail {
-					err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.ReserveSlotFailedEvent), &msg.Order)
-					if err != nil {
-						logger.Log.Error("failed to write event:", err)
-					}
-				} else {
-					err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.ReserveSlotSucceededEvent), &msg.Order)
-					if err != nil {
-						logger.Log.Error("failed to write event:", err)
-					}
 				}
 			default:
 				logger.Log.Debug("unsupported event type: %v", msg.Name)

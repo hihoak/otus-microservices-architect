@@ -14,6 +14,7 @@ import (
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/logger"
 	"github.com/hihoak/otus-microservices-architect/pkg/kafka_deduplicator"
+	"github.com/hihoak/otus-microservices-architect/pkg/transactional_outbox"
 	"github.com/segmentio/kafka-go"
 	"log"
 	"net/http"
@@ -50,6 +51,9 @@ func main() {
 
 	accountRepository = repo.NewPostgresAccountsRepository(postgresClient)
 	createOrderSagaProducer = kafka2.NewKafkaCreateOrderSagaProducer()
+	outbox := transactional_outbox.NewTransactionalOutbox(ctx, "transactional_outbox_create_order_saga_events_billing_service", createOrderSagaProducer, postgresClient)
+	outbox.Start()
+	defer outbox.Close()
 
 	appRouter.POST("/accounts", createAccountGin)
 
@@ -337,9 +341,15 @@ func listenCreateOrderSagaEvents(ctx context.Context) {
 					return postgresClient.BeginTxFunc(ctx, func(ctx context.Context) error {
 						if err = withdrawMoneyByUserID(ctx, msg.Order.UserID, msg.Order.Price); err != nil {
 							if errors.Is(err, account.ErrNotFound) || errors.Is(err, account.ErrUnsufficientFunds) {
+								if err = accountRepository.CreateEvent(ctx, create_order.WithdrawMoneyFailedEvent, &msg.Order); err != nil {
+									return fmt.Errorf("failed to create withdraw money event: %w", err)
+								}
 								return nil
 							}
 							return err
+						}
+						if err = accountRepository.CreateEvent(ctx, create_order.WithdrawMoneySucceededEvent, &msg.Order); err != nil {
+							return fmt.Errorf("failed to create withdraw money event: %w", err)
 						}
 						return nil
 					})
@@ -347,27 +357,20 @@ func listenCreateOrderSagaEvents(ctx context.Context) {
 					logger.Log.Error("failed to withdraw money:", err)
 					continue readMessagesLoop
 				}
-
-				err = createOrderSagaProducer.WriteEvent(ctx, string(create_order.WithdrawMoneySucceededEvent), &msg.Order)
-				if err != nil {
-					logger.Log.Error("failed to write event:", err)
-				}
 			case create_order.UndoWithdrawMoneyCommand:
 				if err = deduplicator.WithDeduplicate(ctx, fmt.Sprintf("%d:%s", msg.ID, msg.Name), func(ctx context.Context) error {
 					return postgresClient.BeginTxFunc(ctx, func(ctx context.Context) error {
 						if err = topUpMoneyByUserID(ctx, msg.Order.UserID, msg.Order.Price); err != nil {
 							return err
 						}
+						if err = accountRepository.CreateEvent(ctx, create_order.UndoWithdrawMoneySucceededEvent, &msg.Order); err != nil {
+							return fmt.Errorf("failed to create withdraw money event: %w", err)
+						}
 						return nil
 					})
 				}); err != nil {
 					logger.Log.Error("failed to reserve stock:", err)
 					continue readMessagesLoop
-				}
-
-				err = createOrderSagaProducer.WriteEvent(ctx, string(create_order.UndoWithdrawMoneySucceededEvent), &msg.Order)
-				if err != nil {
-					logger.Log.Error("failed to write event:", err)
 				}
 			default:
 				logger.Log.Debug("unsupported event type: %v", msg.Name)
