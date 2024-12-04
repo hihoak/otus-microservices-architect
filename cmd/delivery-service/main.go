@@ -13,6 +13,7 @@ import (
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/logger"
+	"github.com/hihoak/otus-microservices-architect/pkg/kafka_deduplicator"
 	"log"
 	"net/http"
 	"strconv"
@@ -21,6 +22,7 @@ import (
 
 var deliverySlotsRepository *repo.PostgresDeliverySlotsRepository
 var createOrderSagaProducer *kafka2.ClientCreateOrderSagaCommand
+var postgresClient *postgres.PostgresRepository
 
 type CreateDeliverySlotBody struct {
 	FromTime       string `json:"from_time"`
@@ -32,8 +34,8 @@ func main() {
 	ctx := context.Background()
 
 	appRouter := gin.Default()
-
-	postgresClient, err := postgres.NewPostgresRepository(ctx, config.Cfg.PostgresDSN)
+	var err error
+	postgresClient, err = postgres.NewPostgresRepository(ctx, config.Cfg.PostgresDSN)
 	if err != nil {
 		log.Fatalf("init postgres client: %v", err)
 	}
@@ -112,6 +114,7 @@ func reserveDeliverySlot(ctx context.Context, id uint64) error {
 func listenCreateOrderSagaEvents(ctx context.Context) {
 	// make a new reader that consumes from topic-A
 	consumer := kafka2.NewKafkaCreateOrderSagaConsumer("delivery-slots-service")
+	deduplicator := kafka_deduplicator.NewKafkaDeduplicator(postgresClient, "processed_create_order_saga_commands_delivery_service")
 
 	go func() {
 		defer func() {
@@ -137,20 +140,31 @@ func listenCreateOrderSagaEvents(ctx context.Context) {
 			logger.Log.Info("consumed event: %v", msg)
 			switch msg.Name {
 			case create_order.ReserveSlotCommand:
-				err := reserveDeliverySlot(ctx, uint64(msg.Order.DeliverySlotID))
-				if err != nil {
-					if !(errors.Is(err, delivery_slots.ErrNotFound) || errors.Is(err, delivery_slots.ErrNotEnoughDeliveries)) {
-						logger.Log.Error("failed to reserve slot:", err)
-						continue readMessagesLoop
-					}
+				var sendFail bool
+				if err = deduplicator.WithDeduplicate(ctx, fmt.Sprintf("%d:%s", msg.ID, msg.Name), func(ctx context.Context) error {
+					return postgresClient.BeginTxFunc(ctx, func(ctx context.Context) error {
+						if err = reserveDeliverySlot(ctx, uint64(msg.Order.DeliverySlotID)); err != nil {
+							if !(errors.Is(err, delivery_slots.ErrNotFound) || errors.Is(err, delivery_slots.ErrNotEnoughDeliveries)) {
+								return fmt.Errorf("failed to reserve slot: %w", err)
+							}
+							sendFail = true
+							logger.Log.Info("it is not possible to reserve slot: ", err)
+							return nil
+						}
+						return nil
+					})
+				}); err != nil {
+					logger.Log.Error("failed to reserve slot:", err)
+					continue readMessagesLoop
 				}
-				if err == nil {
-					err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.ReserveSlotSucceededEvent), &msg.Order)
+
+				if sendFail {
+					err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.ReserveSlotFailedEvent), &msg.Order)
 					if err != nil {
 						logger.Log.Error("failed to write event:", err)
 					}
 				} else {
-					err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.ReserveSlotFailedEvent), &msg.Order)
+					err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.ReserveSlotSucceededEvent), &msg.Order)
 					if err != nil {
 						logger.Log.Error("failed to write event:", err)
 					}

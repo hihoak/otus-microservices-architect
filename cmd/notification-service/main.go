@@ -12,6 +12,7 @@ import (
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/logger"
+	"github.com/hihoak/otus-microservices-architect/pkg/kafka_deduplicator"
 	"log"
 	"net/http"
 	"strconv"
@@ -25,13 +26,15 @@ type CreateNotificationBody struct {
 
 var notificationsRepository *repo.PostgresNotificationsRepository
 var createOrderSagaProducer *kafka2.ClientCreateOrderSagaCommand
+var postgresClient *postgres.PostgresRepository
 
 func main() {
 	ctx := context.Background()
 
 	appRouter := gin.Default()
 
-	postgresClient, err := postgres.NewPostgresRepository(ctx, config.Cfg.PostgresDSN)
+	var err error
+	postgresClient, err = postgres.NewPostgresRepository(ctx, config.Cfg.PostgresDSN)
 	if err != nil {
 		log.Fatalf("init postgres client: %v", err)
 	}
@@ -87,6 +90,7 @@ func main() {
 func listenCreateOrderSagaEvents(ctx context.Context) {
 	// make a new reader that consumes from topic-A
 	consumer := kafka2.NewKafkaCreateOrderSagaConsumer("notifications-service")
+	deduplicator := kafka_deduplicator.NewKafkaDeduplicator(postgresClient, "processed_create_order_saga_commands_notification_service")
 
 	go func() {
 		defer func() {
@@ -112,7 +116,11 @@ func listenCreateOrderSagaEvents(ctx context.Context) {
 			logger.Log.Info("consumed event: %v", msg)
 			switch msg.Name {
 			case create_order.NotifyCommand:
-				if err := notificationsRepository.CreateNotification(ctx, notification.NewNotification(msg.Order.UserID, "success to process order", time.Now())); err != nil {
+				if err = deduplicator.WithDeduplicate(ctx, fmt.Sprintf("%d:%s", msg.ID, msg.Name), func(ctx context.Context) error {
+					return postgresClient.BeginTxFunc(ctx, func(ctx context.Context) error {
+						return notificationsRepository.CreateNotification(ctx, notification.NewNotification(msg.Order.UserID, "success to process order", time.Now()))
+					})
+				}); err != nil {
 					logger.Log.Error("failed to create notification:", err)
 					continue readMessagesLoop
 				}

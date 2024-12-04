@@ -18,7 +18,7 @@ spec:
       containers:
         - name: notification-service
           imagePullPolicy: Always
-          image: soundsofanarchy/otus-microservices-architect:v2.1.0-notification-service-arm
+          image: soundsofanarchy/otus-microservices-architect:v3.0.0-notification-service-arm
           ports:
             - containerPort: 9000
           envFrom:

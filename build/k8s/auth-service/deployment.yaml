@@ -18,6 +18,6 @@ spec:
       containers:
         - name: auth-service
           imagePullPolicy: Always
-          image: soundsofanarchy/otus-microservices-architect:v2.1.0-auth-service-arm
+          image: soundsofanarchy/otus-microservices-architect:v3.0.0-auth-service-arm
           ports:
             - containerPort: 9000
