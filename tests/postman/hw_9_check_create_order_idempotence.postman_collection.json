@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "3a801adc-6205-4f5b-9839-25587f8fb0bb",
-		"name": "hw_8_create_order_success",
+		"_postman_id": "229584a2-5b48-403f-9411-a26878f148bf",
+		"name": "hw_9_check_create_order_idempotence",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "24643335"
 	},
@@ -516,7 +516,90 @@
 						"exec": [
 							"pm.test(\"Status test and res\", function() {",
 							"    pm.response.to.have.status(200)",
-							"     pm.globals.set(\"order1.id\", pm.response.json().ID)",
+							"    pm.globals.set(\"order1.id\", pm.response.json().ID)",
+							"    pm.globals.set(\"order1_response\", pm.response.json())",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.globals.set(\"order1.price\", 350)",
+							"pm.globals.set(\"item1.reserved\", 100)",
+							"pm.globals.set(\"item2.reserved\", 10)",
+							"",
+							"pm.setGlobalVariable(\"v4uuid\", 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8); return v.toString(16); }));",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user2.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user2.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Request-ID",
+						"value": "{{v4uuid}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user_id\": {{user1.id}},\n    \"price\": 350,\n    \"item_ids_with_stocks\": {\n        \"{{item1.id}}\": 100,\n        \"{{item2.id}}\": 10\n    },\n    \"delivery_slot_id\": {{delivery_slot1.id}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/orders/artem/orders",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"orders",
+						"artem",
+						"orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "user1 create order for 350 price Duplicate and equal to first call",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"    pm.expect(pm.globals.get(\"order1_response\")).equal(pm.response.json())",
 							"})",
 							""
 						],
@@ -555,7 +638,94 @@
 					]
 				},
 				"method": "POST",
-				"header": [],
+				"header": [
+					{
+						"key": "X-Request-ID",
+						"value": "{{v4uuid}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user_id\": {{user1.id}},\n    \"price\": 350,\n    \"item_ids_with_stocks\": {\n        \"{{item1.id}}\": 100,\n        \"{{item2.id}}\": 10\n    },\n    \"delivery_slot_id\": {{delivery_slot1.id}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/orders/artem/orders",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"orders",
+						"artem",
+						"orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "user1 create order for 350 price Duplicate 2 and equal to the first call",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"    pm.globals.set(\"order1.id\", pm.response.json().ID)",
+							"    pm.expect(pm.globals.get(\"order1_response\")).equal(pm.response.json())",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.globals.set(\"order1.price\", 350)",
+							"pm.globals.set(\"item1.reserved\", 100)",
+							"pm.globals.set(\"item2.reserved\", 10)",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user2.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user2.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Request-ID",
+						"value": "{{v4uuid}}",
+						"type": "text"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\n    \"user_id\": {{user1.id}},\n    \"price\": 350,\n    \"item_ids_with_stocks\": {\n        \"{{item1.id}}\": 100,\n        \"{{item2.id}}\": 10\n    },\n    \"delivery_slot_id\": {{delivery_slot1.id}}\n}",

@@ -1,0 +1,18 @@
+@startuml
+actor user as user
+
+user -> "order-service" : POST /orders
+database "db" as db
+	"order-service" -> db : проверяет наличие по заголовку "X-Request-ID"
+group CachedScenario
+	db -> "order-service" : запись по ключу существует отдает Response
+	"order-service" --> user : order_id (Cached)
+end
+group NotCachedScenario
+	db -[#red]> "order-service"  : запись по ключу отсутствует "X-Request-ID"
+	"order-service" -> db : создание заказа (WithdrawMoneyPending)
+	"order-service" -> db : сохранение по ключу "X-Request-ID" Response
+	"order-service" -> order_saga_kafka : WithdrawMoneyCommand
+	"order-service" --> user : order_id
+end
+@enduml
