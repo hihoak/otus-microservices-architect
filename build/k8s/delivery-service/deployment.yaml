@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: billing-service
+  name: delivery-service
   namespace: app
   labels:
-    app: billing-service
+    app: delivery-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: billing-service
+      app: delivery-service
   template:
     metadata:
       labels:
-        app: billing-service
+        app: delivery-service
     spec:
       containers:
-        - name: billing-service
+        - name: delivery-service
           imagePullPolicy: Always
-          image: soundsofanarchy/otus-microservices-architect:v2.0.0-billing-service-arm
+          image: soundsofanarchy/otus-microservices-architect:v2.0.0-delivery-service-arm
           ports:
             - containerPort: 9000
           envFrom:

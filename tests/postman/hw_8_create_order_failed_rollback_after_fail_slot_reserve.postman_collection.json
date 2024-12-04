@@ -1,13 +1,13 @@
 {
 	"info": {
-		"_postman_id": "f398e02f-ccd9-4566-96bf-b5424cb3d89f",
-		"name": "hw7_tests",
+		"_postman_id": "f3d4d529-b66c-43c2-9439-7262cdb2c84d",
+		"name": "hw_8_create_order_failed_rollback_after_fail_slot_reserve",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "24643335"
 	},
 	"item": [
 		{
-			"name": "1) create user 1",
+			"name": "prepare_create user 1",
 			"event": [
 				{
 					"listen": "test",
@@ -59,7 +59,7 @@
 			"response": []
 		},
 		{
-			"name": "1) user1 creates user Artem",
+			"name": "prepare_user1 creates user Artem",
 			"event": [
 				{
 					"listen": "test",
@@ -120,7 +120,190 @@
 			"response": []
 		},
 		{
-			"name": "1) get user1 billing account",
+			"name": "prepare_create_stock1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"    pm.globals.set(\"item1.id\", pm.response.json().ID)",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"count\": 200\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/warehouse/artem/items",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"warehouse",
+						"artem",
+						"items"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "prepare_create_stock2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"    pm.globals.set(\"item2.id\", pm.response.json().ID)",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"count\": 10\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/warehouse/artem/items",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"warehouse",
+						"artem",
+						"items"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "prepare_create_slot1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
+							"    pm.globals.set(\"delivery_slot1.id\", pm.response.json().ID)",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"from_time\": \"2024-11-28T15:00:00Z\",\n    \"to_time\": \"2024-11-28T16:00:00Z\",\n    \"deliveries_left\": 0\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/delivery/artem/delivery-slots",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"delivery",
+						"artem",
+						"delivery-slots"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get user1 billing account",
 			"event": [
 				{
 					"listen": "test",
@@ -137,6 +320,16 @@
 							"    pm.globals.set(\"user1.account.id\", pm.response.json().ID)",
 							"});",
 							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"setTimeout(function(){}, 1000);"
 						],
 						"type": "text/javascript",
 						"packages": {}
@@ -184,7 +377,7 @@
 			"response": []
 		},
 		{
-			"name": "2) top up 650 to user1 account",
+			"name": "top up 650 to user1 account",
 			"event": [
 				{
 					"listen": "test",
@@ -246,7 +439,7 @@
 			"response": []
 		},
 		{
-			"name": "2) check user1 account money 650",
+			"name": "check user1 account money 650",
 			"event": [
 				{
 					"listen": "test",
@@ -315,7 +508,7 @@
 			"response": []
 		},
 		{
-			"name": "3) user1 create order for 350 price",
+			"name": "user1 create order for 350 price",
 			"event": [
 				{
 					"listen": "test",
@@ -323,7 +516,21 @@
 						"exec": [
 							"pm.test(\"Status test and res\", function() {",
 							"    pm.response.to.have.status(200)",
+							"     pm.globals.set(\"order1.id\", pm.response.json().ID)",
 							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.globals.set(\"order1.price\", 350)",
+							"pm.globals.set(\"item1.reserved\", 100)",
+							"pm.globals.set(\"item2.reserved\", 10)",
 							""
 						],
 						"type": "text/javascript",
@@ -351,7 +558,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"user_id\": {{user1.id}},\n    \"price\": 350\n}",
+					"raw": "{\n    \"user_id\": {{user1.id}},\n    \"price\": 350,\n    \"item_ids_with_stocks\": {\n        \"{{item1.id}}\": 100,\n        \"{{item2.id}}\": 10\n    },\n    \"delivery_slot_id\": {{delivery_slot1.id}}\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -375,81 +582,7 @@
 			"response": []
 		},
 		{
-			"name": "4) check user1 account money",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Response time is within an acceptable range\", function () {",
-							"  pm.expect(pm.response.responseTime).to.be.below(500);",
-							"});",
-							"",
-							"",
-							"pm.test(\"Response status code is 200\", function () {",
-							"    pm.expect(pm.response.code).to.equal(200);",
-							"    pm.expect(pm.response.json().Amount).to.equal(300)",
-							"    pm.globals.set(\"user1.account.id\", pm.response.json().ID)",
-							"});",
-							""
-						],
-						"type": "text/javascript",
-						"packages": {}
-					}
-				},
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							"setTimeout(function(){}, 1000);"
-						],
-						"type": "text/javascript",
-						"packages": {}
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "basic",
-					"basic": [
-						{
-							"key": "password",
-							"value": "{{user1.password}}",
-							"type": "string"
-						},
-						{
-							"key": "username",
-							"value": "{{user1.username}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://arch.homework/billing/artem/accounts?user_id={{user1.id}}",
-					"protocol": "http",
-					"host": [
-						"arch",
-						"homework"
-					],
-					"path": [
-						"billing",
-						"artem",
-						"accounts"
-					],
-					"query": [
-						{
-							"key": "user_id",
-							"value": "{{user1.id}}"
-						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "5) check success notification",
+			"name": "check that there is no notification",
 			"event": [
 				{
 					"listen": "test",
@@ -481,8 +614,7 @@
 							"pm.test(\"Status test and res\", function() {",
 							"    pm.response.to.have.status(200)",
 							"",
-							"    pm.expect(pm.response.json().notifications).length(1)",
-							"    pm.expect(pm.response.json().notifications[0].Text).to.equal(\"success to withdraw money\")",
+							"    pm.expect(pm.response.json().notifications).length(0)",
 							"})",
 							""
 						],
@@ -494,7 +626,7 @@
 					"listen": "prerequest",
 					"script": {
 						"exec": [
-							"setTimeout(function(){}, 1000);"
+							"setTimeout(function(){}, 10000);"
 						],
 						"type": "text/javascript",
 						"packages": {}
@@ -542,15 +674,31 @@
 			"response": []
 		},
 		{
-			"name": "6) user1 create order for 600 price unsufficient funds",
+			"name": "check slot1 deliveries unchanged",
 			"event": [
 				{
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"Status test and res\", function() {",
-							"    pm.response.to.have.status(200)",
-							"})",
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(pm.response.json().DeliveriesLeft).to.equal(0)",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
 							""
 						],
 						"type": "text/javascript",
@@ -564,45 +712,37 @@
 					"basic": [
 						{
 							"key": "password",
-							"value": "{{user2.password}}",
+							"value": "{{user1.password}}",
 							"type": "string"
 						},
 						{
 							"key": "username",
-							"value": "{{user2.username}}",
+							"value": "{{user1.username}}",
 							"type": "string"
 						}
 					]
 				},
-				"method": "POST",
+				"method": "GET",
 				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"user_id\": {{user1.id}},\n    \"price\": 600\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
 				"url": {
-					"raw": "http://arch.homework/orders/artem/orders",
+					"raw": "http://arch.homework/delivery/artem/delivery-slots/{{delivery_slot1.id}}",
 					"protocol": "http",
 					"host": [
 						"arch",
 						"homework"
 					],
 					"path": [
-						"orders",
+						"delivery",
 						"artem",
-						"orders"
+						"delivery-slots",
+						"{{delivery_slot1.id}}"
 					]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "7) user1 money unchanged",
+			"name": "check item1 stocks unchanged",
 			"event": [
 				{
 					"listen": "test",
@@ -615,7 +755,143 @@
 							"",
 							"pm.test(\"Response status code is 200\", function () {",
 							"    pm.expect(pm.response.code).to.equal(200);",
-							"    pm.expect(pm.response.json().Amount).to.equal(300)",
+							"    pm.expect(pm.response.json().Count).to.equal(200)",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/warehouse/artem/items/{{item1.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"warehouse",
+						"artem",
+						"items",
+						"{{item1.id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check item2 stocks unchanged",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(pm.response.json().Count).to.equal(10)",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{user1.password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{user1.username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/warehouse/artem/items/{{item2.id}}",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"warehouse",
+						"artem",
+						"items",
+						"{{item2.id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check user1 account money unchanged",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response time is within an acceptable range\", function () {",
+							"  pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Response status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(pm.response.json().Amount).to.equal(650)",
 							"    pm.globals.set(\"user1.account.id\", pm.response.json().ID)",
 							"});",
 							""
@@ -628,7 +904,7 @@
 					"listen": "prerequest",
 					"script": {
 						"exec": [
-							"setTimeout(function(){}, 1000);"
+							""
 						],
 						"type": "text/javascript",
 						"packages": {}
@@ -676,7 +952,7 @@
 			"response": []
 		},
 		{
-			"name": "8) check failed notification",
+			"name": "check order failed status",
 			"event": [
 				{
 					"listen": "test",
@@ -684,33 +960,20 @@
 						"exec": [
 							"pm.test(\"Status test and res\", function() {",
 							"    pm.response.to.have.status(200)",
-							"",
-							"    pm.expect(pm.response.json().notifications).to.be.an(\"array\")",
 							"})",
 							"",
 							"pm.test(\"Response time is within an acceptable range\", function () {",
 							"  pm.expect(pm.response.responseTime).to.be.below(500);",
 							"});",
 							"",
-							"",
 							"pm.test(\"Response status code is 200\", function () {",
 							"    pm.expect(pm.response.code).to.equal(200);",
 							"});",
 							"",
+							"pm.test(\"Status test and res\", function() {",
+							"    pm.response.to.have.status(200)",
 							"",
-							"pm.test(\"Response has the required schema for users\", function () {",
-							"    const responseData = pm.response.json();",
-							"    ",
-							"    pm.expect(responseData).to.be.an('object');",
-							"    pm.expect(responseData.notifications).to.exist.and.to.be.an('array');",
-							"});",
-							"",
-							"pm.test(\"length check\", function() {",
-							"    pm.expect(pm.response.json().notifications).length(2)",
-							"})",
-							"",
-							"pm.test(\"text equal\", function() {",
-							"    pm.expect(pm.response.json().notifications[1].Text).to.equal(\"failed to withdraw money\")",
+							"    pm.expect(pm.response.json().status).to.equal(\"OrderFailed\")",
 							"})",
 							""
 						],
@@ -722,7 +985,7 @@
 					"listen": "prerequest",
 					"script": {
 						"exec": [
-							"setTimeout(function(){}, 1000);"
+							""
 						],
 						"type": "text/javascript",
 						"packages": {}
@@ -748,22 +1011,17 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://arch.homework/notifications/artem/notifications?user_id={{user1.id}}",
+					"raw": "http://arch.homework/orders/artem/orders/{{order1.id}}",
 					"protocol": "http",
 					"host": [
 						"arch",
 						"homework"
 					],
 					"path": [
-						"notifications",
+						"orders",
 						"artem",
-						"notifications"
-					],
-					"query": [
-						{
-							"key": "user_id",
-							"value": "{{user1.id}}"
-						}
+						"orders",
+						"{{order1.id}}"
 					]
 				}
 			},

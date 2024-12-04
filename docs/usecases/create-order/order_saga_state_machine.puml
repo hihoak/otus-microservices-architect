@@ -1,0 +1,25 @@
+@startuml
+
+state "OrderFailed" as Failed #red
+
+WithdrawMoneyPending : send WithdrawMoneyCommand
+WithdrawMoneyPending #palegreen --> ReserveStockPending #palegreen : WithdrawMoneySucceededEvent
+ReserveStockPending : send ReserveStockCommand
+ReserveStockPending --> ReserveSlotPending #palegreen : ReserveStockSucceededEvent
+ReserveSlotPending : send ReserveSlotCommand
+ReserveSlotPending --> NotifyPending #palegreen : ReserveSlotSucceededEvent
+
+NotifyPending : send NotifyCommand
+NotifyPending --> OrderSucceeded #green : NotifySucceededEvent
+
+
+WithdrawMoneyPending -> Failed : WithdrawMoneyFailedEvent
+
+ReserveStockPending -> UndoWithdrawMoneyPending #pink : ReserveStockFailedEvent
+UndoWithdrawMoneyPending : send UndoWithdrawMoneyCommand
+UndoWithdrawMoneyPending -> Failed : UndoWithdrawMoneySucceededEvent
+
+ReserveSlotPending -> UndoReserveStockPending #pink : ReserveSlotFailedEvent
+UndoReserveStockPending: send UndoStockCommand
+UndoReserveStockPending -up-> UndoWithdrawMoneyPending : UndoStockSucceededEvent
+@enduml

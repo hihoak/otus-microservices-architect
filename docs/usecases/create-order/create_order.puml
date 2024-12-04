@@ -1,14 +1,36 @@
 @startuml
 actor user as user
-queue "orders-events" as orders_kafka
-queue "billing-events" as billing_kafka
+queue "order-saga" as order_saga_kafka
 
 user -> "order-service" : POST /orders
-"order-service" -> orders_kafka : OrderCreated
-"order-service" -> user : OK
+"order-service" -> "order-service" : создание заказа (WithdrawMoneyPending)
+"order-service" -> order_saga_kafka : WithdrawMoneyCommand
+"order-service" --> user : order_id
 
-orders_kafka -> "billing-service" : OrderCreated -> POST /accounts/{id}/withdraw
-"billing-service" -> billing_kafka : MoneyWithdrawSucceeded / MoneyWithdrawFailed
+order_saga_kafka -> "billing-service" : WithdrawMoneyCommand -> POST /accounts/{id}/withdraw
+"billing-service" --> order_saga_kafka : WithdrawMoneySucceededEvent
 
-billing_kafka -> "notification-service" : MoneyReserved -> POST /notifications
+order_saga_kafka -> "order-service" : WithdrawMoneySucceededEvent -> PUT /orders/{id}/process
+"order-service" -> "order-service" : обновление статуса заказа (ReserveStockPending)
+"order-service" --> order_saga_kafka : ReserveStockCommand
+
+order_saga_kafka -> "warehouse-service" : ReserveStockCommand -> PUT /items/{id}/reserve
+"warehouse-service" --> order_saga_kafka : ReserveStockSucceededEvent
+
+order_saga_kafka -> "order-service" : ReserveStockSucceededEvent -> PUT /orders/{id}/process
+"order-service" -> "order-service" : обновление статуса заказа (ReserveSlotPending)
+"order-service" -> order_saga_kafka : ReserveSlotCommand
+
+order_saga_kafka -> "delivery-service" : ReserveSlotCommand -> PUT /slots/{id}/schedule-delivery
+"delivery-service" --> order_saga_kafka : ReserveSlotSucceededEvent
+
+order_saga_kafka -> "order-service" : ReserveStockSucceededEvent -> PUT /orders/{id}/process
+"order-service" -> "order-service" : обновление статуса заказа (NotifyPending)\nпройдена неповортная операция
+"order-service" -> order_saga_kafka : NotifyCommand
+
+order_saga_kafka -> "notification-service" : NotifyCommand -> POST /notification
+"notification-service" --> order_saga_kafka : NotifySucceededEvent
+
+order_saga_kafka -> "order-service" : NotifySucceededEvent -> PUT /orders/{id}/process
+"order-service" -> "order-service" : обновление статуса заказа (OrderDone)
 @enduml

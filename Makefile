@@ -3,8 +3,8 @@ test-postman:
     # write to /etc/hosts "127.0.0.1 arch.homework"
 	newman run --verbose tests/postman/hw4_tests.postman_collection.json
 	newman run --verbose tests/postman/hw5_tests.postman_collection.json
-	newman run --verbose tests/postman/hw6_tests.postman_collection.json
-	newman run --verbose tests/postman/hw7_tests.postman_collection.json
+	newman run --verbose tests/postman/hw_8_create_order_failed_rollback_after_fail_slot_reserve.postman_collection.json
+	newman run --verbose tests/postman/hw_8_create_order_success.postman_collection.json
 
 install-postgres:
 	./build/k8s/infra/postgresql/install.sh
@@ -14,61 +14,82 @@ install-postgres:
 build-auth-service:
 	docker login
 	GOOS=linux GOARCH=amd64 go build -o bin/auth-service cmd/auth-service/main.go
-	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-auth-service -f build/k8s/auth-service/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-auth-service
+	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-auth-service -f build/k8s/auth-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-auth-service
 
 	GOOS=linux GOARCH=arm64 go build -o bin/auth-service cmd/auth-service/main.go
-	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-auth-service-arm -f build/k8s/auth-service/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-auth-service-arm
+	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-auth-service-arm -f build/k8s/auth-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-auth-service-arm
 
 build-billing-service:
 	docker login
 	GOOS=linux GOARCH=amd64 go build -o bin/billing-service cmd/billing-service/main.go
-	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-billing-service -f build/k8s/billing-service/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-billing-service
+	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-billing-service -f build/k8s/billing-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-billing-service
 
 	GOOS=linux GOARCH=arm64 go build -o bin/billing-service cmd/billing-service/main.go
-	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-billing-service-arm -f build/k8s/billing-service/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-billing-service-arm
+	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-billing-service-arm -f build/k8s/billing-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-billing-service-arm
+
+build-warehouse-service:
+	docker login
+	GOOS=linux GOARCH=amd64 go build -o bin/warehouse-service cmd/warehouse-service/main.go
+	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-warehouse-service -f build/k8s/warehouse-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-warehouse-service
+
+	GOOS=linux GOARCH=arm64 go build -o bin/warehouse-service cmd/warehouse-service/main.go
+	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-warehouse-service-arm -f build/k8s/warehouse-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-warehouse-service-arm
+
+build-delivery-service:
+	docker login
+	GOOS=linux GOARCH=amd64 go build -o bin/delivery-service cmd/delivery-service/main.go
+	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-delivery-service -f build/k8s/delivery-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-delivery-service
+
+	GOOS=linux GOARCH=arm64 go build -o bin/delivery-service cmd/delivery-service/main.go
+	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-delivery-service-arm -f build/k8s/delivery-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-delivery-service-arm
+
 
 build-notification-service:
 	docker login
 	GOOS=linux GOARCH=amd64 go build -o bin/notification-service cmd/notification-service/main.go
-	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-notification-service -f build/k8s/notification-service/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-notification-service
+	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-notification-service -f build/k8s/notification-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-notification-service
 
 	GOOS=linux GOARCH=arm64 go build -o bin/notification-service cmd/notification-service/main.go
-	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-notification-service-arm -f build/k8s/notification-service/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-notification-service-arm
+	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-notification-service-arm -f build/k8s/notification-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-notification-service-arm
 
 build-order-service:
 	docker login
 	GOOS=linux GOARCH=amd64 go build -o bin/order-service cmd/order-service/main.go
-	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-order-service -f build/k8s/order-service/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-order-service
+	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-order-service -f build/k8s/order-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-order-service
 
 	GOOS=linux GOARCH=arm64 go build -o bin/order-service cmd/order-service/main.go
-	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-order-service-arm -f build/k8s/order-service/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-order-service-arm
+	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-order-service-arm -f build/k8s/order-service/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-order-service-arm
 
 build-app:
 	docker login
 	GOOS=linux GOARCH=amd64 go build -o bin/service cmd/main.go
-	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0 -f build/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0
+	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0 -f build/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0
 
 	GOOS=linux GOARCH=arm64 go build -o bin/service cmd/main.go
-	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-arm -f build/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-arm
+	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-arm -f build/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-arm
 
 build-migrations:
 	docker login
-	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-migrations -f build/k8s/migrations/Dockerfile .
-	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v1.3.0-migrations-arm -f build/k8s/migrations/Dockerfile .
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-migrations
-	docker push soundsofanarchy/otus-microservices-architect:v1.3.0-migrations-arm
+	docker build --platform linux/amd64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-migrations -f build/k8s/migrations/Dockerfile .
+	docker build --platform linux/arm64 --tag soundsofanarchy/otus-microservices-architect:v2.0.0-migrations-arm -f build/k8s/migrations/Dockerfile .
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-migrations
+	docker push soundsofanarchy/otus-microservices-architect:v2.0.0-migrations-arm
 
-build-all: build-app build-auth-service build-billing-service build-notification-service build-order-service build-migrations
+build-all: build-app build-auth-service build-billing-service build-warehouse-service build-delivery-service build-notification-service build-order-service build-migrations
 
 run-migrations:
 	kubectl apply -f ./build/k8s/migrations/secret.yaml
@@ -91,6 +112,12 @@ install-auth-service:
 install-billing-service:
 	./build/k8s/billing-service/install.sh
 
+install-warehouse-service:
+	./build/k8s/warehouse-service/install.sh
+
+install-delivery-service:
+	./build/k8s/delivery-service/install.sh
+
 install-order-service:
 	./build/k8s/order-service/install.sh
 
@@ -105,6 +132,12 @@ delete-auth-service:
 
 delete-billing-service:
 	./build/k8s/billing-service/delete.sh
+
+delete-warehouse-service:
+	./build/k8s/warehouse-service/delete.sh
+
+delete-delivery-service:
+	./build/k8s/delivery-service/delete.sh
 
 delete-order-service:
 	./build/k8s/order-service/delete.sh
@@ -128,7 +161,7 @@ sleep-30:
 	echo "wait 30 sec"
 	sleep 30
 
-install-world: install-infra install-postgres run-migrations install-auth-service install-app install-billing-service install-order-service install-notification-service sleep-30
+install-world: install-infra install-postgres run-migrations install-auth-service install-app install-billing-service install-warehouse-service install-delivery-service install-order-service install-notification-service sleep-30
 
 check-hw: decrypt-secret install-world test-postman
 

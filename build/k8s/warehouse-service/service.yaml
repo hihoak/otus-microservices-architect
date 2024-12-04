@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: warehouse-service
+  namespace: app
+spec:
+  type: LoadBalancer
+  selector:
+    app: warehouse-service
+  ports:
+    - protocol: TCP
+      name: http
+      port: 9090
+      targetPort: 9000
