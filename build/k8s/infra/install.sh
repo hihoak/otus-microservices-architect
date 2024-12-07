@@ -19,3 +19,7 @@ helm upgrade -i grafana grafana/grafana -f build/k8s/infra/grafana/values.yaml
 echo "install kafka"
 kubectl create namespace kafka || true
 helm upgrade -n kafka -i kafka oci://registry-1.docker.io/bitnamicharts/kafka -f build/k8s/infra/kafka/values.yaml
+
+echo "install keycloak"
+kubectl create namespace keycloak || true
+helm upgrade -n keycloak -i keycloak oci://registry-1.docker.io/bitnamicharts/keycloak -f build/k8s/infra/keycloak/values.yaml

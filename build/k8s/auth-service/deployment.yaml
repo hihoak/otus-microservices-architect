@@ -21,3 +21,10 @@ spec:
           image: soundsofanarchy/otus-microservices-architect:v3.0.0-auth-service-arm
           ports:
             - containerPort: 9000
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi

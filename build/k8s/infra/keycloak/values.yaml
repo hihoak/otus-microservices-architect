@@ -1,0 +1,33 @@
+service:
+  type: LoadBalancer
+
+  ports:
+    http: 8888
+    https: 8889
+#ingress:
+#  enabled: true
+#  ingressClassName: nginx
+#  pathType: Prefix
+#  hostname: "sso.arch.homework"
+#  path: "/"
+ingress:
+  enabled: true
+  ingressClassName: nginx
+#  annotations:
+#    nginx.ingress.kubernetes.io/use-regex: "true"
+#    nginx.ingress.kubernetes.io/rewrite-target: /$1
+  pathType: Prefix
+  path: "/keycloak"
+  hostname: "arch.homework"
+  hostnameStrict: true
+
+httpRelativePath: "/keycloak/"
+#
+#auth:
+#  existingSecret: "keycloak"
+#
+#postgresql:
+#  auth:
+#    existingSecret: "keycloak-postgresql"
+#  persistence:
+#    existingClaim: "data-keycloak-postgresql-0"
