@@ -21,6 +21,8 @@ ingress:
   hostname: "arch.homework"
   hostnameStrict: true
 
+resourcesPreset: small
+
 httpRelativePath: "/keycloak/"
 #
 #auth:

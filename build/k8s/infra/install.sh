@@ -23,3 +23,8 @@ helm upgrade -n kafka -i kafka oci://registry-1.docker.io/bitnamicharts/kafka -f
 echo "install keycloak"
 kubectl create namespace keycloak || true
 helm upgrade -n keycloak -i keycloak oci://registry-1.docker.io/bitnamicharts/keycloak -f build/k8s/infra/keycloak/values.yaml
+
+echo "install kafka-lag-exporter"
+helm repo add kafka-lag-exporter https://seglo.github.io/kafka-lag-exporter/repo/
+helm repo update
+helm -n kafka upgrade -i kafka-lag-exporter kafka-lag-exporter/kafka-lag-exporter -f build/k8s/infra/kafka-lag-exporter/values.yaml

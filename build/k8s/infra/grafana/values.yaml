@@ -11,3 +11,11 @@ ingress:
   path: "/grafana/(.*)"
   hosts:
     - "arch.homework"
+
+resources:
+  requests:
+    cpu: 300m
+    memory: 512Mi
+  limits:
+    cpu: 300m
+    memory: 512Mi
