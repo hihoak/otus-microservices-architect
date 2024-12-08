@@ -149,7 +149,7 @@ func (o *Orchestrator) listenCreateOrderSagaEvents(ctx context.Context) {
 					continue
 				}
 
-				if err := o.createOrderSagaEventsProducer.WriteEvent(ctx, nextCommand, ord); err != nil {
+				if err := o.createOrderSagaEventsProducer.WriteOrderEvent(ctx, nextCommand, ord); err != nil {
 					logger.Log.Error("write event creat order saga %q: order %v", nextCommand, ord)
 				}
 

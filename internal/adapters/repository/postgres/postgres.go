@@ -3,11 +3,14 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"github.com/hihoak/otus-microservices-architect/internal/pkg/logger"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type tXKey struct{}
+type DeduplicationFuncKey struct{}
+type DeduplicationFunc func(ctx context.Context) error
 
 type PostgresRepository struct {
 	pool *pgxpool.Pool
@@ -45,11 +48,21 @@ func (repo *PostgresRepository) BeginTxFunc(ctx context.Context, f func(ctx cont
 
 	err = f(ctx)
 
-	if err != nil {
-		if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
-			return fmt.Errorf("function: %w: rollback: %w", err, rollbackErr)
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+				logger.Log.Error("rollback failed:", rollbackErr)
+			}
 		}
+	}()
+
+	if err != nil {
 		return fmt.Errorf("function: %w", err)
+	}
+
+	err = repo.doDeduplicationFuncFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("deduplication function: %w", err)
 	}
 
 	if commitErr := tx.Commit(ctx); commitErr != nil {
@@ -57,6 +70,14 @@ func (repo *PostgresRepository) BeginTxFunc(ctx context.Context, f func(ctx cont
 	}
 
 	return nil
+}
+
+func (repo *PostgresRepository) doDeduplicationFuncFromContext(ctx context.Context) error {
+	fu, ok := ctx.Value(DeduplicationFuncKey{}).(DeduplicationFunc)
+	if !ok {
+		return nil
+	}
+	return fu(ctx)
 }
 
 func (repo *PostgresRepository) txFromContext(ctx context.Context) (pgx.Tx, bool) {

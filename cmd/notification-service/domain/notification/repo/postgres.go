@@ -2,13 +2,18 @@ package repo
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/hihoak/otus-microservices-architect/cmd/notification-service/domain/notification"
+	"github.com/hihoak/otus-microservices-architect/cmd/order-service/domain/order"
+	"github.com/hihoak/otus-microservices-architect/cmd/order-service/sagas/create_order"
+	"github.com/hihoak/otus-microservices-architect/internal/adapters/kafka"
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jackc/pgx/v4"
+	"strconv"
 )
 
 type PostgresNotificationsRepository struct {
@@ -60,4 +65,29 @@ func (p *PostgresNotificationsRepository) ListByUserID(ctx context.Context, user
 	}
 
 	return acc, nil
+}
+
+func (p *PostgresNotificationsRepository) CreateEvent(ctx context.Context, eventName create_order.CreateOrderSagaEventType, ord *order.Order) error {
+	insertBuilder := sqlbuilder.NewInsertBuilder()
+	body, err := json.Marshal(kafka.CreateOrderSagaCommand{
+		ID:    int64(ord.ID),
+		Name:  eventName,
+		Order: *ord,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal CreateOrderSagaCommand: %w", err)
+	}
+
+	sql, args := insertBuilder.InsertInto("transactional_outbox_create_order_saga_events_notification_svc").
+		Cols("key", "message").
+		Values(strconv.Itoa(int(ord.ID)), body).
+		BuildWithFlavor(sqlbuilder.PostgreSQL)
+
+	rows, err := p.client.Query(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("unexpected err when creating query: %w", err)
+	}
+	defer rows.Close()
+
+	return nil
 }

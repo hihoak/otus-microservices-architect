@@ -109,7 +109,7 @@ func main() {
 			return
 		}
 
-		if err = createOrderSagaProducer.WriteEvent(ctx, command, ord); err != nil {
+		if err = createOrderSagaProducer.WriteOrderEvent(ctx, command, ord); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

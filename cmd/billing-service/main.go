@@ -13,6 +13,8 @@ import (
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/logger"
+	"github.com/hihoak/otus-microservices-architect/pkg/kafka_deduplicator"
+	"github.com/hihoak/otus-microservices-architect/pkg/transactional_outbox"
 	"github.com/segmentio/kafka-go"
 	"log"
 	"net/http"
@@ -22,6 +24,7 @@ import (
 
 var accountRepository *repo.PostgresAccountsRepository
 var createOrderSagaProducer *kafka2.ClientCreateOrderSagaCommand
+var postgresClient *postgres.PostgresRepository
 
 type CreateAccountBody struct {
 	UserID int64 `json:"user_id"`
@@ -40,13 +43,17 @@ func main() {
 
 	appRouter := gin.Default()
 
-	postgresClient, err := postgres.NewPostgresRepository(ctx, config.Cfg.PostgresDSN)
+	var err error
+	postgresClient, err = postgres.NewPostgresRepository(ctx, config.Cfg.PostgresDSN)
 	if err != nil {
 		log.Fatalf("init postgres client: %v", err)
 	}
 
 	accountRepository = repo.NewPostgresAccountsRepository(postgresClient)
 	createOrderSagaProducer = kafka2.NewKafkaCreateOrderSagaProducer()
+	outbox := transactional_outbox.NewTransactionalOutbox(ctx, "transactional_outbox_create_order_saga_events_billing_service", createOrderSagaProducer, postgresClient)
+	outbox.Start()
+	defer outbox.Close()
 
 	appRouter.POST("/accounts", createAccountGin)
 
@@ -245,6 +252,8 @@ func listenUsersEvents(ctx context.Context) {
 		WatchPartitionChanges: true,
 	})
 
+	usersEventsDeduplicator := kafka_deduplicator.NewKafkaDeduplicator(postgresClient, "processed_users_events_billing_service")
+
 	go func() {
 		defer func() {
 			if err := usersEventsReader.Close(); err != nil {
@@ -258,6 +267,7 @@ func listenUsersEvents(ctx context.Context) {
 				logger.Log.Error("failed to fetch message:", err)
 				break
 			}
+
 			var unmarshalledEvent kafka2.UserEvent
 			err = json.Unmarshal(m.Value, &unmarshalledEvent)
 			if err != nil {
@@ -271,8 +281,14 @@ func listenUsersEvents(ctx context.Context) {
 			logger.Log.Info("consumed event: %v", unmarshalledEvent)
 			switch unmarshalledEvent.EventType {
 			case kafka2.UserCreatedEvent:
-				_, err := createAccount(ctx, int64(unmarshalledEvent.User.ID))
-				if err != nil {
+				if err = usersEventsDeduplicator.WithDeduplicate(ctx, fmt.Sprintf("%d:%s", unmarshalledEvent.User.ID, unmarshalledEvent.EventType), func(ctx context.Context) error {
+					return postgresClient.BeginTxFunc(ctx, func(ctx context.Context) error {
+						if _, err := createAccount(ctx, int64(unmarshalledEvent.User.ID)); err != nil {
+							return err
+						}
+						return nil
+					})
+				}); err != nil {
 					logger.Log.Error("error creating account: %v", err)
 					continue
 				}
@@ -295,6 +311,7 @@ func listenUsersEvents(ctx context.Context) {
 func listenCreateOrderSagaEvents(ctx context.Context) {
 	// make a new reader that consumes from topic-A
 	consumer := kafka2.NewKafkaCreateOrderSagaConsumer("billing-service")
+	deduplicator := kafka_deduplicator.NewKafkaDeduplicator(postgresClient, "processed_create_order_saga_commands_billing_service")
 
 	go func() {
 		defer func() {
@@ -320,29 +337,40 @@ func listenCreateOrderSagaEvents(ctx context.Context) {
 			logger.Log.Info("consumed event: %v", msg)
 			switch msg.Name {
 			case create_order.WithdrawMoneyCommand:
-				if err = withdrawMoneyByUserID(ctx, msg.Order.UserID, msg.Order.Price); err != nil {
-					if errors.Is(err, account.ErrNotFound) || errors.Is(err, account.ErrUnsufficientFunds) {
-						err = createOrderSagaProducer.WriteEvent(ctx, string(create_order.WithdrawMoneyFailedEvent), &msg.Order)
-						if err != nil {
-							logger.Log.Error("failed to write event:", err)
+				if err = deduplicator.WithDeduplicate(ctx, fmt.Sprintf("%d:%s", msg.ID, msg.Name), func(ctx context.Context) error {
+					return postgresClient.BeginTxFunc(ctx, func(ctx context.Context) error {
+						if err = withdrawMoneyByUserID(ctx, msg.Order.UserID, msg.Order.Price); err != nil {
+							if errors.Is(err, account.ErrNotFound) || errors.Is(err, account.ErrUnsufficientFunds) {
+								if err = accountRepository.CreateEvent(ctx, create_order.WithdrawMoneyFailedEvent, &msg.Order); err != nil {
+									return fmt.Errorf("failed to create withdraw money event: %w", err)
+								}
+								return nil
+							}
+							return err
 						}
-					} else {
-						logger.Log.Error("failed to withdraw money:", err)
-						continue readMessagesLoop
-					}
-				}
-				err = createOrderSagaProducer.WriteEvent(ctx, string(create_order.WithdrawMoneySucceededEvent), &msg.Order)
-				if err != nil {
-					logger.Log.Error("failed to write event:", err)
-				}
-			case create_order.UndoWithdrawMoneyCommand:
-				if err = topUpMoneyByUserID(ctx, msg.Order.UserID, msg.Order.Price); err != nil {
-					logger.Log.Error("failed to reserve stock:", err)
+						if err = accountRepository.CreateEvent(ctx, create_order.WithdrawMoneySucceededEvent, &msg.Order); err != nil {
+							return fmt.Errorf("failed to create withdraw money event: %w", err)
+						}
+						return nil
+					})
+				}); err != nil {
+					logger.Log.Error("failed to withdraw money:", err)
 					continue readMessagesLoop
 				}
-				err := createOrderSagaProducer.WriteEvent(ctx, string(create_order.UndoWithdrawMoneySucceededEvent), &msg.Order)
-				if err != nil {
-					logger.Log.Error("failed to write event:", err)
+			case create_order.UndoWithdrawMoneyCommand:
+				if err = deduplicator.WithDeduplicate(ctx, fmt.Sprintf("%d:%s", msg.ID, msg.Name), func(ctx context.Context) error {
+					return postgresClient.BeginTxFunc(ctx, func(ctx context.Context) error {
+						if err = topUpMoneyByUserID(ctx, msg.Order.UserID, msg.Order.Price); err != nil {
+							return err
+						}
+						if err = accountRepository.CreateEvent(ctx, create_order.UndoWithdrawMoneySucceededEvent, &msg.Order); err != nil {
+							return fmt.Errorf("failed to create withdraw money event: %w", err)
+						}
+						return nil
+					})
+				}); err != nil {
+					logger.Log.Error("failed to reserve stock:", err)
+					continue readMessagesLoop
 				}
 			default:
 				logger.Log.Debug("unsupported event type: %v", msg.Name)

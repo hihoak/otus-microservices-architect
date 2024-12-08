@@ -22,7 +22,7 @@ spec:
       containers:
         - name: backend
           imagePullPolicy: Always
-          image: soundsofanarchy/otus-microservices-architect:v2.1.0-arm
+          image: soundsofanarchy/otus-microservices-architect:v3.0.0-arm
           ports:
             - containerPort: 8000
             - containerPort: 8001
@@ -31,3 +31,10 @@ spec:
                 name: backend
             - secretRef:
                 name: backend
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 10m
+              memory: 64Mi

@@ -12,6 +12,8 @@ import (
 	"github.com/hihoak/otus-microservices-architect/internal/adapters/repository/postgres"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/config"
 	"github.com/hihoak/otus-microservices-architect/internal/pkg/logger"
+	"github.com/hihoak/otus-microservices-architect/pkg/kafka_deduplicator"
+	"github.com/hihoak/otus-microservices-architect/pkg/transactional_outbox"
 	"log"
 	"net/http"
 	"strconv"
@@ -25,13 +27,15 @@ type CreateNotificationBody struct {
 
 var notificationsRepository *repo.PostgresNotificationsRepository
 var createOrderSagaProducer *kafka2.ClientCreateOrderSagaCommand
+var postgresClient *postgres.PostgresRepository
 
 func main() {
 	ctx := context.Background()
 
 	appRouter := gin.Default()
 
-	postgresClient, err := postgres.NewPostgresRepository(ctx, config.Cfg.PostgresDSN)
+	var err error
+	postgresClient, err = postgres.NewPostgresRepository(ctx, config.Cfg.PostgresDSN)
 	if err != nil {
 		log.Fatalf("init postgres client: %v", err)
 	}
@@ -39,6 +43,10 @@ func main() {
 	createOrderSagaProducer = kafka2.NewKafkaCreateOrderSagaProducer()
 
 	notificationsRepository = repo.NewPostgresNotificationsRepository(postgresClient)
+
+	outbox := transactional_outbox.NewTransactionalOutbox(ctx, "transactional_outbox_create_order_saga_events_notification_svc", createOrderSagaProducer, postgresClient)
+	outbox.Start()
+	defer outbox.Close()
 
 	appRouter.POST("/notifications", func(c *gin.Context) {
 		body := CreateNotificationBody{}
@@ -87,6 +95,7 @@ func main() {
 func listenCreateOrderSagaEvents(ctx context.Context) {
 	// make a new reader that consumes from topic-A
 	consumer := kafka2.NewKafkaCreateOrderSagaConsumer("notifications-service")
+	deduplicator := kafka_deduplicator.NewKafkaDeduplicator(postgresClient, "processed_create_order_saga_commands_notification_service")
 
 	go func() {
 		defer func() {
@@ -112,14 +121,19 @@ func listenCreateOrderSagaEvents(ctx context.Context) {
 			logger.Log.Info("consumed event: %v", msg)
 			switch msg.Name {
 			case create_order.NotifyCommand:
-				if err := notificationsRepository.CreateNotification(ctx, notification.NewNotification(msg.Order.UserID, "success to process order", time.Now())); err != nil {
+				if err = deduplicator.WithDeduplicate(ctx, fmt.Sprintf("%d:%s", msg.ID, msg.Name), func(ctx context.Context) error {
+					return postgresClient.BeginTxFunc(ctx, func(ctx context.Context) error {
+						if err = notificationsRepository.CreateNotification(ctx, notification.NewNotification(msg.Order.UserID, "success to process order", time.Now())); err != nil {
+							return err
+						}
+						if err = notificationsRepository.CreateEvent(ctx, create_order.NotifySucceededEvent, &msg.Order); err != nil {
+							return err
+						}
+						return nil
+					})
+				}); err != nil {
 					logger.Log.Error("failed to create notification:", err)
 					continue readMessagesLoop
-				}
-
-				err = createOrderSagaProducer.WriteEvent(ctx, string(create_order.NotifySucceededEvent), &msg.Order)
-				if err != nil {
-					logger.Log.Error("failed to write event:", err)
 				}
 			default:
 				logger.Log.Debug("unsupported event type: %v", msg.Name)

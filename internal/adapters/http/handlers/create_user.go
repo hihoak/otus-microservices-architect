@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/hihoak/otus-microservices-architect/internal/domain/user"
+	"github.com/hihoak/otus-microservices-architect/internal/pkg/claims"
 	"net/http"
 )
 
@@ -20,7 +21,13 @@ func (s Service) CreateUserHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	username, _, _ := c.Request.BasicAuth()
+
+	username, err := claims.UsernameFromGinContext(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
 	usr, err := s.usersService.CreateUser(context.Background(), body.FirstName, body.Surname, body.Age, username)
 	if err != nil {
 		if errors.Is(err, user.ErrNotFound) {
