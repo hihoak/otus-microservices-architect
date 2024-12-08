@@ -11,6 +11,8 @@ echo "delete prom"
 helm delete prometheus
 echo "delete grafana"
 helm delete grafana
+echo "delete kafka-exporter"
+helm -n kafka delete kafka-lag-exporter
 echo "delete kafka"
 helm -n kafka delete kafka
 kubectl delete namespace kafka
