@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hihoak/otus-microservices-architect/internal/domain/user"
+	"github.com/hihoak/otus-microservices-architect/internal/pkg/claims"
 	"net/http"
 	"strconv"
 )
@@ -30,7 +31,11 @@ func (s Service) UpdateUserHandler(c *gin.Context) {
 		return
 	}
 
-	username, _, _ := c.Request.BasicAuth()
+	username, err := claims.UsernameFromGinContext(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	err = s.usersService.UpdateUser(context.Background(), uint64(id), body.FirstName, body.Surname, body.Age, body.OwnedByUsername, username)
 	if err != nil {

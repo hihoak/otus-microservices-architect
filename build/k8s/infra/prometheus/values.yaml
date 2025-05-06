@@ -1,4 +1,11 @@
 server:
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
   global:
     scrape_interval: 2s
     scrape_timeout: 1s
@@ -15,3 +22,39 @@ server:
     path: "/prometheus/(.*)"
     hosts:
       - "arch.homework"
+
+alertmanager:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 10m
+      memory: 64Mi
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 10m
+      memory: 64Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 10m
+      memory: 64Mi
+
+prometheus-pushgateway:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 10m
+      memory: 64Mi

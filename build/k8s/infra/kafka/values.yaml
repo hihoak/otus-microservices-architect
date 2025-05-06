@@ -1,16 +1,24 @@
 provisioning:
   enabled: true
   topics:
-    - name: orders-events
-      replicationFactor: 1
-    - name: billing-events
-      replicationFactor: 1
     - name: users-events
       replicationFactor: 1
-    - name: create-order-saga-event
+    - name: create-order-saga-commands
       replicationFactor: 1
-    - name: create-order-saga-command
-      replicationFactor: 1
+#
+#externalAccess:
+#  autoDiscovery:
+#    resourcesPreset: small
+
+controller:
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "5556"
+  resourcesPreset: medium
+
+#broker:
+#  resourcesPreset: small
 
 listeners:
   client:

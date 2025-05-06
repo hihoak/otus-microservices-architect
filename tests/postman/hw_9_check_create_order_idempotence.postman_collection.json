@@ -7,35 +7,31 @@
 	},
 	"item": [
 		{
-			"name": "prepare_create user 1",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status test and res\", function() {",
-							"    pm.response.to.have.status(200)",
-							"})",
-							"",
-							"pm.test(\"Response time is within an acceptable range\", function () {",
-							"  pm.expect(pm.response.responseTime).to.be.below(100);",
-							"});",
-							"",
-							"",
-							"pm.globals.set(\"user1.username\", \"artem\");",
-							"pm.globals.set(\"user1.password\", \"1111\");"
-						],
-						"type": "text/javascript",
-						"packages": {}
-					}
-				}
-			],
+			"name": "login",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
 			"request": {
-				"method": "POST",
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "mu6AG7Neyc",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"username\": \"artem\",\n    \"password\": \"1111\"\n}",
+					"raw": "",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -43,7 +39,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://arch.homework/auth/artem/sign-up",
+					"raw": "http://arch.homework/auth/artem/login/basic-auth",
 					"protocol": "http",
 					"host": [
 						"arch",
@@ -52,7 +48,8 @@
 					"path": [
 						"auth",
 						"artem",
-						"sign-up"
+						"login",
+						"basic-auth"
 					]
 				}
 			},
@@ -517,7 +514,7 @@
 							"pm.test(\"Status test and res\", function() {",
 							"    pm.response.to.have.status(200)",
 							"    pm.globals.set(\"order1.id\", pm.response.json().ID)",
-							"    pm.globals.set(\"order1_response\", pm.response.json())",
+							"    pm.globals.set(\"order1_response_id\", pm.response.json().ID)",
 							"})",
 							""
 						],
@@ -533,7 +530,7 @@
 							"pm.globals.set(\"item1.reserved\", 100)",
 							"pm.globals.set(\"item2.reserved\", 10)",
 							"",
-							"pm.setGlobalVariable(\"v4uuid\", 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8); return v.toString(16); }));",
+							"pm.globals.set(\"v4uuid\", 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8); return v.toString(16); }));",
 							""
 						],
 						"type": "text/javascript",
@@ -599,7 +596,7 @@
 						"exec": [
 							"pm.test(\"Status test and res\", function() {",
 							"    pm.response.to.have.status(200)",
-							"    pm.expect(pm.globals.get(\"order1_response\")).equal(pm.response.json())",
+							"    pm.expect(pm.globals.get(\"order1_response_id\")).equal(pm.response.json().ID)",
 							"})",
 							""
 						],
@@ -680,7 +677,7 @@
 							"pm.test(\"Status test and res\", function() {",
 							"    pm.response.to.have.status(200)",
 							"    pm.globals.set(\"order1.id\", pm.response.json().ID)",
-							"    pm.expect(pm.globals.get(\"order1_response\")).equal(pm.response.json())",
+							"    pm.expect(pm.globals.get(\"order1_response_id\")).equal(pm.response.json().ID)",
 							"})",
 							""
 						],

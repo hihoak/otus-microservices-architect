@@ -36,7 +36,15 @@ func (c *ClientCreateOrderSagaCommand) Close() error {
 	return nil
 }
 
-func (c *ClientCreateOrderSagaCommand) WriteEvent(ctx context.Context, name string, order *order.Order) error {
+func (c *ClientCreateOrderSagaCommand) WriteEvent(ctx context.Context, key, message string) error {
+	err := c.writerCreateOrderSaga.WriteMessages(ctx, kafka.Message{Key: []byte(key), Value: []byte(message)})
+	if err != nil {
+		return fmt.Errorf("failed to write message CreateOrderSagaCommand: %w", err)
+	}
+	return nil
+}
+
+func (c *ClientCreateOrderSagaCommand) WriteOrderEvent(ctx context.Context, name string, order *order.Order) error {
 	body, err := json.Marshal(CreateOrderSagaCommand{
 		ID:    int64(order.ID),
 		Name:  create_order.CreateOrderSagaEventType(name),
